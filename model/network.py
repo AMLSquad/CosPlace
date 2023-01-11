@@ -3,7 +3,8 @@ import torch
 import logging
 import torchvision
 from torch import nn
-
+import copy
+from torch.autograd import Function
 from model.layers import Flatten, L2Norm, GeM
 
 
@@ -15,6 +16,20 @@ CHANNELS_NUM_IN_LAST_CONV = {
         "vgg16": 512,
     }
 
+class ReverseLayerF(Function):
+    # Forwards identity
+    # Sends backward reversed gradients
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+
+        return output, None
 
 class GeoLocalizationNet(nn.Module):
     def __init__(self, backbone, fc_output_dim):
@@ -28,11 +43,27 @@ class GeoLocalizationNet(nn.Module):
                 nn.Linear(features_dim, fc_output_dim),
                 L2Norm()
             )
+
+        # Domain adaptation
+        alexnet = torchvision.models.alexnet(pretrained=True)
+        self.domain_classifier = copy.deepcopy(alexnet.classifier)
+        num_domains = 2
+        last_l_idx = len(self.domain_classifier) - 1
+        self.domain_classifier[last_l_idx] = nn.Linear(4096, num_domains)
+
+
     
-    def forward(self, x):
-        x = self.backbone(x)
-        x = self.aggregation(x)
-        return x
+    def forward(self, x, alpha=None, flag_domain=False):
+        features = self.backbone(x)
+        
+        if alpha is not None and flag_domain==True:
+        
+            # perform adaptation round
+            # logits output dim is num_domains
+            features = ReverseLayerF.apply(features, alpha)
+            return self.domain_classifier(features)
+
+        return self.aggregation(features)
 
 
 def get_backbone(backbone_name):

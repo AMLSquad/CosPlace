@@ -19,8 +19,15 @@ import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
+from datasets.target_dataset import TargetDataset
+from torch.utils.data import DataLoader
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
+
+
+
+
+
 
 args = parser.parse_arguments()
 start_time = datetime.now()
@@ -34,6 +41,16 @@ logging.info(f"The outputs are being saved in {output_folder}")
 #### Model
 model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
 
+#DOMAIN ADAPTATION PARAMETERS
+LR = 0.0005
+alpha = 0.5
+number_of_target_images = 5
+target_dataset = TargetDataset("target_night")
+target_dataloader = DataLoader(target_dataset, batch_size=number_of_target_images, shuffle=True)
+domain_criterion = torch.nn.CrossEntropyLoss()
+domain_params = model.domain_classifier.parameters()
+domain_optimizer = torch.optim.SGD(domain_params, lr=LR)
+
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
 if args.resume_model is not None:
@@ -46,7 +63,16 @@ model = model.to(args.device).train()
 
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss()
-model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+# Remove the domain classifier parameters from the model parameters
+model_parameters = [p for p in model.parameters() if p not in model.domain_classifier.parameters()]
+model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
+
+param_groups = [
+    {'params': domain_params, 'optimizer': domain_optimizer},
+    {'params': model_parameters, 'optimizer': model_optimizer}
+]
+
+model_optimizer = torch.optim.SGD(param_groups)
 
 #### Datasets
 # Each group is treated as a different dataset
@@ -128,6 +154,25 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
         if not args.use_amp16:
             #Get descriptors from the model (ends with fc and normalization)
             descriptors = model(images)
+
+            #STEP 2
+            outputDomainSource = model(images, alpha=alpha, flag_domain=True)
+
+            #source labels (0)
+            labels_domain_source = torch.zeros(len(images), dtype=torch.long).to(args.device)
+            lossDomainSource = domain_criterion(outputDomainSource, labels_domain_source)
+            lossDomainSource.backward()
+    
+            #STEP 3
+            #target labels (1)
+            imagesTarget = next(iter(target_dataloader))[0].to(args.device)
+            #imagesTarget = imagesTarget[0:images.size(0),:,:,:]
+            outputDomainTarget = model(imagesTarget, alpha=alpha, flag_domain=True)
+            labels_domain_target = torch.ones(len(imagesTarget), dtype=torch.long).to(args.device)
+
+            lossDomainTarget = domain_criterion(outputDomainTarget, labels_domain_target)
+            lossDomainTarget.backward()
+
             #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
             output = classifiers[current_group_num](descriptors, targets)
             #Applies the softmax loss
@@ -140,6 +185,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             model_optimizer.step()
             #optimize the parameters of the classifier
             classifiers_optimizers[current_group_num].step()
+        #todo: add domain adaptation here
         else:  # Use AMP 16
             with torch.cuda.amp.autocast():
                 descriptors = model(images)
