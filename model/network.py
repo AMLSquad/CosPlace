@@ -16,25 +16,31 @@ CHANNELS_NUM_IN_LAST_CONV = {
         "vgg16": 512,
     }
 
+CHANNELS_AFTER_AVGPOOLING = {
+    "resnet18": 512,
+    "resnet50": 2048,
+    "resnet101": 2048,
+    "resnet152": 2048,
+    "vgg16": 512,
+}
+
 class ReverseLayerF(Function):
     # Forwards identity
     # Sends backward reversed gradients
     @staticmethod
     def forward(ctx, x, alpha):
         ctx.alpha = alpha
-
         return x.view_as(x)
 
     @staticmethod
     def backward(ctx, grad_output):
         output = grad_output.neg() * ctx.alpha
-
         return output, None
 
 class GeoLocalizationNet(nn.Module):
     def __init__(self, backbone, fc_output_dim):
         super().__init__()
-        self.backbone, features_dim = get_backbone(backbone)
+        self.backbone, features_dim, avg_layer = get_backbone(backbone)
         self.aggregation = nn.Sequential(
                 L2Norm(),
                 # For each channel, get only one value
@@ -45,11 +51,17 @@ class GeoLocalizationNet(nn.Module):
             )
 
         # Domain adaptation
-        alexnet = torchvision.models.alexnet(pretrained=True)
-        self.domain_classifier = copy.deepcopy(alexnet.classifier)
         num_domains = 2
-        last_l_idx = len(self.domain_classifier) - 1
-        self.domain_classifier[last_l_idx] = nn.Linear(4096, num_domains)
+        self.avg_layer = torch.nn.Sequential(*avg_layer)
+        self.domain_classifier = nn.Sequential(
+            self.avg_layer,
+            L2Norm(),
+            # For each channel, get only one value
+            GeM(),
+            Flatten(),
+            nn.Linear(features_dim, num_domains),
+        )
+        
 
 
     
@@ -57,7 +69,7 @@ class GeoLocalizationNet(nn.Module):
         features = self.backbone(x)
         
         if alpha is not None and flag_domain==True:
-        
+            
             # perform adaptation round
             # logits output dim is num_domains
             features = ReverseLayerF.apply(features, alpha)
@@ -83,10 +95,12 @@ def get_backbone(backbone_name):
             for params in child.parameters():
                 params.requires_grad = False
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
+        avg_layer = list(backbone.children())[-2:-1]
         layers = list(backbone.children())[:-2]  # Remove avg pooling and FC layer
     
     elif backbone_name == "vgg16":
         backbone = torchvision.models.vgg16(pretrained=True)
+        avg_layer = list(backbone.features.children())[-2:-1]
         layers = list(backbone.features.children())[:-2]  # Remove avg pooling and FC layer
         for layer in layers[:-5]:
             for p in layer.parameters():
@@ -97,4 +111,4 @@ def get_backbone(backbone_name):
     
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]
     
-    return backbone, features_dim
+    return backbone, features_dim, avg_layer

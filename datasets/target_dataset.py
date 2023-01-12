@@ -20,10 +20,11 @@ class TargetDataset(data.Dataset):
 
         self.base_transform = transforms.Compose([
             transforms.ToTensor(),
+            transforms.Resize((512,512)),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-        self.image_paths = sorted(glob(os.path.join(self.database_folder, "**", "*.jpg"), recursive=True))
+        self.images_paths = sorted(glob(os.path.join(self.dataset_folder, "**", "*.jpg"), recursive=True))
 
     def __getitem__(self, index):
         image_path = self.images_paths[index]
