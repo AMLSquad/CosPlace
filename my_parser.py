@@ -48,13 +48,14 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--device", type=str, default="cuda",
                         choices=["cuda", "cpu"], help="_")
     parser.add_argument("--seed", type=int, default=0, help="_")
-    parser.add_argument("--num_workers", type=int, default=8, help="_")
+    parser.add_argument("--num_workers", type=int, default=2, help="_")
     # Paths parameters
     parser.add_argument("--dataset_folder", type=str, default=None,
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
                         help="name of directory on which to save the logs, under logs/save_dir")
-    
+    parser.add_argument("--target_dataset_folder", type=str, default=None,
+                        help="path of the folder with images from the target for DA sets")
     args = parser.parse_args()
     
     if args.dataset_folder is None:
