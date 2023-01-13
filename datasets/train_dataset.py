@@ -108,7 +108,7 @@ class TrainDataset(torch.utils.data.Dataset):
         logging.debug(f"Found {len(images_paths)} images")
 
         #Do the same for synthetic night images
-        images_paths += sorted(glob(f"syntetic_night_augmentation/**/*.jpg", recursive=True))
+        images_paths += sorted(glob(f"small_night/**/*.jpg", recursive=True))
         logging.debug(f"Found {len(images_paths)} images")
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")

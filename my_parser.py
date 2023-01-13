@@ -50,6 +50,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--seed", type=int, default=0, help="_")
     parser.add_argument("--num_workers", type=int, default=8, help="_")
     # Paths parameters
+    parser.add_argument("--night_folder", type=str, default="small_night/")
     parser.add_argument("--dataset_folder", type=str, default=None,
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
