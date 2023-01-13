@@ -6,7 +6,7 @@ import multiprocessing
 from datetime import datetime
 
 import test
-import parser
+import my_parser as parser
 import commons
 from model import network
 from datasets.test_dataset import TestDataset
