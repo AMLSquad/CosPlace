@@ -24,23 +24,39 @@ CHANNELS_AFTER_AVGPOOLING = {
     "vgg16": 512,
 }
 
-class ReverseLayerF(Function):
-    # Forwards identity
-    # Sends backward reversed gradients
+class GradientReversalFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-        return x.view_as(x)
+    def forward(ctx, x):
+        return x.clone()
+    @staticmethod
+    def backward(ctx, grads):
+        dx = -grads.new_tensor(1) * grads
+        return dx, None
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        output = grad_output.neg() * ctx.alpha
-        return output, None
+class GradientReversal(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, x):
+        x = torch.nn.functional.adaptive_avg_pool2d(x, (1,1))
+        x = x.view(x.shape[0], -1)
+        return GradientReversalFunction.apply(x)
+
+def get_discriminator(input_dim, num_classes=2):
+    discriminator = nn.Sequential(
+        GradientReversal(),
+        nn.Linear(input_dim, 50),
+        nn.ReLU(),
+        nn.Linear(50, 20),
+        nn.ReLU(),
+        nn.Linear(20, num_classes)
+    )
+    return discriminator
+
 
 class GeoLocalizationNet(nn.Module):
-    def __init__(self, backbone, fc_output_dim):
+    def __init__(self, backbone, fc_output_dim, domain_adaptation = False):
         super().__init__()
-        self.backbone, features_dim, avg_layer = get_backbone(backbone)
+        self.backbone, features_dim, _ = get_backbone(backbone)
         self.aggregation = nn.Sequential(
                 L2Norm(),
                 # For each channel, get only one value
@@ -49,31 +65,20 @@ class GeoLocalizationNet(nn.Module):
                 nn.Linear(features_dim, fc_output_dim),
                 L2Norm()
             )
-
         # Domain adaptation
-        num_domains = 2
-        self.avg_layer = torch.nn.Sequential(*avg_layer)
-        self.domain_classifier = nn.Sequential(
-            self.avg_layer,
-            L2Norm(),
-            # For each channel, get only one value
-            GeM(),
-            Flatten(),
-            nn.Linear(features_dim, num_domains),
-        )
+        self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
+        
         
 
 
     
-    def forward(self, x, alpha=None, flag_domain=False):
+    def forward(self, x, grl=False):
         features = self.backbone(x)
         
-        if alpha is not None and flag_domain==True:
-            
+        if grl==True:
             # perform adaptation round
             # logits output dim is num_domains
-            features = ReverseLayerF.apply(features, alpha)
-            return self.domain_classifier(features)
+            return self.discriminator(features)
 
         return self.aggregation(features)
 

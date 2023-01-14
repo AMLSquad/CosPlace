@@ -6,7 +6,7 @@ from PIL import Image
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from sklearn.neighbors import NearestNeighbors
-
+import torch
 
 def open_image(path):
     return Image.open(path).convert("RGB")
@@ -30,7 +30,30 @@ class TargetDataset(data.Dataset):
         image_path = self.images_paths[index]
         pil_img = open_image(image_path)
         normalized_img = self.base_transform(pil_img)
-        return normalized_img, index
+        #1 stands for night
+        return normalized_img, 1 
 
     def __len__(self):
         return len(self.images_paths)
+
+
+class DomainAdaptationDataLoader(data.DataLoader):
+    def __init__(self, source_dataset, target_dataset, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.source_domain_iterator = data.DataLoader(source_dataset).__iter__()
+        self.target_domain_iterator = data.DataLoader(target_dataset).__iter__()
+        self.source_dim = int(kwargs["batch_size"] * 2 / 3)
+        self.target_dim = kwargs["batch_size"] - self.source_dim
+    def __iter__(self):
+        return self
+
+    def  __next__(self):
+        try:
+            source_batch = next(self.source_domain_iterator)
+            target_batch = next(self.target_domain_iterator)
+            batch = torch.cat((source_batch, target_batch),0)
+        except StopIteration:
+            self.dataset_iterator = super().__iter__()
+            batch = next(self.dataset_iterator)
+        return batch
+

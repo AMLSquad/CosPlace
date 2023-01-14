@@ -40,17 +40,10 @@ if __name__=='__main__':
     logging.info(f"The outputs are being saved in {output_folder}")
 
     #### Model
-    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
+    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation)
 
-    #DOMAIN ADAPTATION PARAMETERS
-    LR = 0.0005
-    alpha = 0.5
-    number_of_target_images = 5
-    target_dataset = TargetDataset("target_night")
-    target_dataloader = DataLoader(target_dataset, batch_size=number_of_target_images, shuffle=True)
-    domain_criterion = torch.nn.CrossEntropyLoss()
-    domain_params = model.domain_classifier.parameters()
-    domain_optimizer = torch.optim.SGD(domain_params, lr=LR)
+
+   
 
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -61,20 +54,28 @@ if __name__=='__main__':
 
     # set model to train mode
     model = model.to(args.device).train()
-
     #### Optimizer
     criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
 
-    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters())
+
+    if args.domain_adaptation:
+        da_batch_size = 32
+        da_dataset = TargetDataset("tokyo_xs/test/night/")
+        da_dataloader = DataLoader(da_dataset, batch_size=da_batch_size, shuffle=True)
+        domain_criterion = torch.nn.CrossEntropyLoss()
+
+
+    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters(), model.discriminator.parameters() if args.domain_adaptation else [])
     model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
 
-
+    
+        
 
     #### Datasets
     # Each group is treated as a different dataset
     groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                        current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
+                        current_group=n, min_images_per_class=args.min_images_per_class, domain_adaptation=True) for n in range(args.groups_num)]
     # Each group has its own classifier, which depends on the number of classes in the group
     classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
     classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
@@ -122,7 +123,11 @@ if __name__=='__main__':
                                                             scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-
+    dataloader = commons.InfiniteDataLoader(groups[0], num_workers=1,#args.num_workers,
+                                                batch_size=args.batch_size, shuffle=True,
+                                                pin_memory=(args.device == "cuda"), drop_last=True)
+    print(next(dataloader))
+    """
     if args.use_amp16:
         scaler = torch.cuda.amp.GradScaler()
 
@@ -135,7 +140,7 @@ if __name__=='__main__':
         classifiers[current_group_num] = classifiers[current_group_num].to(args.device)
         util.move_to_device(classifiers_optimizers[current_group_num], args.device)
         # setup the dataloader
-        dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
+        dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=1,#args.num_workers,
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
         
@@ -147,51 +152,41 @@ if __name__=='__main__':
             images, targets, _ = next(dataloader_iterator)
             images, targets = images.to(args.device), targets.to(args.device)
             
+            if args.domain_adaptation:
+                da_images, da_targets, _ = next(da_dataloader)
+                da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
+
             if args.augmentation_device == "cuda":
                 images = gpu_augmentation(images)
             
             model_optimizer.zero_grad()
-            domain_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()
 
-            #STEP 2
-            number_of_images_in_iteration = len(images)
-            number_of_images = min(number_of_images_in_iteration, number_of_target_images)
-            #outputDomainSource = model(images[0:number_of_images,:,:,:], alpha=alpha, flag_domain=True)
-            source_images = images[0:number_of_images,:,:,:]
-            outputDomainSource = model(source_images, alpha=alpha, flag_domain=True)
-            #source labels (0)
-            labels_domain_source = torch.zeros(number_of_images, dtype=torch.long).to(args.device)
-            lossDomainSource = domain_criterion(outputDomainSource, labels_domain_source)
-            lossDomainSource.backward()
-
-            #STEP 3
-            #target labels (1)
-            imagesTarget = next(iter(target_dataloader))[0].to(args.device)
-            if args.augmentation_device == "cuda":
-                imagesTarget = target_augmentation(imagesTarget)
-            #imagesTarget = imagesTarget[0:images.size(0),:,:,:]
-            outputDomainTarget = model(imagesTarget, alpha=alpha, flag_domain=True)
-            labels_domain_target = torch.ones(len(imagesTarget), dtype=torch.long).to(args.device)
-
-            lossDomainTarget = domain_criterion(outputDomainTarget, labels_domain_target)
-            lossDomainTarget.backward()
+            
             
             if not args.use_amp16:
                 #Get descriptors from the model (ends with fc and normalization)
                 descriptors = model(images)
-
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
                 output = classifiers[current_group_num](descriptors, targets)
                 #Applies the softmax loss
                 loss = criterion(output, targets)
                 loss.backward()
                 #append the loss to the epoch losses
-                epoch_losses = np.append(epoch_losses, loss.item())
-                del loss, output, images
+
+                
+
+                da_loss = 0
+                if args.domain_adaptation:
+                    da_output = model(da_images, grl=True)
+                    da_loss = criterion(da_output, da_targets)
+                    da_loss.backward()
+                    da_loss = da_loss.item()
+
+                epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
+                del loss, output, images, da_loss, da_output, da_images
                 #optimize the parameters
                 model_optimizer.step()
-                domain_optimizer.step()
                 #optimize the parameters of the classifier
                 classifiers_optimizers[current_group_num].step()
             #todo: add domain adaptation here
@@ -201,8 +196,13 @@ if __name__=='__main__':
                     output = classifiers[current_group_num](descriptors, targets)
                     loss = criterion(output, targets)
                 scaler.scale(loss).backward()
+                if args.domain_adaptation:
+                    with torch.cuda.amp.autocast():
+                        da_output = model(da_images, grl=True)
+                        loss = criterion(da_output, da_targets)
+                    scaler.scale(loss).backward()
                 epoch_losses = np.append(epoch_losses, loss.item())
-                del loss, output, images
+                del loss, output, images, da_loss, da_output, da_images
                 scaler.step(model_optimizer)
                 scaler.step(classifiers_optimizers[current_group_num])
                 scaler.update()
@@ -240,3 +240,4 @@ if __name__=='__main__':
     logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
+    """

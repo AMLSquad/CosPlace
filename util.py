@@ -18,8 +18,9 @@ def move_to_device(optimizer: Type[torch.optim.Optimizer], device: str):
 def save_checkpoint(state: dict, is_best: bool, output_folder: str,
                     ckpt_filename: str = "last_checkpoint.pth"):
     # TODO it would be better to move weights to cpu before saving
+    epoch_num = str(state["epoch_num"])
     checkpoint_path = f"{output_folder}/{ckpt_filename}"
-    torch.save(state, checkpoint_path)
+    torch.save(state, checkpoint_path + epoch_num)
     if is_best:
         torch.save(state["model_state_dict"], f"{output_folder}/best_model.pth")
 
