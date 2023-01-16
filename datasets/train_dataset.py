@@ -90,12 +90,11 @@ class TrainDataset(torch.utils.data.Dataset):
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)
         
-        if self.domain_adaptation:
-            filename = os.path.basename(image_path)
-            label = 1 if filename.startswith("night") else 0
-            return tensor_image, label, image_path 
+        
+        filename = os.path.basename(image_path)
+        da_label = 1 if filename.startswith("night") else 0
 
-        return tensor_image, class_num, image_path
+        return tensor_image, class_num, image_path, da_label
     
     def get_images_num(self):
         """Return the number of images within this group."""

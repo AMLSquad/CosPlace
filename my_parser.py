@@ -54,7 +54,7 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
                         help="name of directory on which to save the logs, under logs/save_dir")
-    parser.add_argument("--target_dataset_folder", type=str, default=None,
+    parser.add_argument("--target_dataset_folder", type=str, default="tokyo_xs/test/night/",
                         help="path of the folder with images from the target for DA sets")
     parser.add_argument("--domain_adaptation", type=bool, default=False)
     parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")

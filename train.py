@@ -19,20 +19,20 @@ if __name__=='__main__':
     from model import network
     from datasets.test_dataset import TestDataset
     from datasets.train_dataset import TrainDataset
-    from datasets.target_dataset import TargetDataset
+    from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
     from torch.utils.data import DataLoader
     from itertools import chain
 
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
 
-
+    experiment_name=""
 
 
 
     args = parser.parse_arguments()
     start_time = datetime.now()
-    output_folder = f"logs/{args.save_dir}/{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
+    output_folder = f"logs/{args.save_dir}/{experiment_name}_{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
     commons.make_deterministic(args.seed)
     commons.setup_logging(output_folder, console="debug")
     logging.info(" ".join(sys.argv))
@@ -60,9 +60,7 @@ if __name__=='__main__':
 
 
     if args.domain_adaptation:
-        da_batch_size = 32
-        da_dataset = TargetDataset("tokyo_xs/test/night/")
-        da_dataloader = DataLoader(da_dataset, batch_size=da_batch_size, shuffle=True)
+        target_dataset = TargetDataset(args.target_dataset_folder)
         domain_criterion = torch.nn.CrossEntropyLoss()
 
 
@@ -75,7 +73,7 @@ if __name__=='__main__':
     #### Datasets
     # Each group is treated as a different dataset
     groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                        current_group=n, min_images_per_class=args.min_images_per_class, domain_adaptation=True) for n in range(args.groups_num)]
+                        current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
     # Each group has its own classifier, which depends on the number of classes in the group
     classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
     classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
@@ -126,8 +124,7 @@ if __name__=='__main__':
     dataloader = commons.InfiniteDataLoader(groups[0], num_workers=1,#args.num_workers,
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
-    print(next(dataloader))
-    """
+    
     if args.use_amp16:
         scaler = torch.cuda.amp.GradScaler()
 
@@ -144,16 +141,20 @@ if __name__=='__main__':
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
         
+        if args.domain_adaptation:
+            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,num_workers=1,
+                                                        batch_size = 16, shuffle=True,
+                                                        pin_memory=(args.device == "cuda"), drop_last=True)
         dataloader_iterator = iter(dataloader)
         model = model.train()
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
         for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
-            images, targets, _ = next(dataloader_iterator)
+            images, targets, _, _ = next(dataloader_iterator)
             images, targets = images.to(args.device), targets.to(args.device)
             
             if args.domain_adaptation:
-                da_images, da_targets, _ = next(da_dataloader)
+                da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
             if args.augmentation_device == "cuda":
@@ -175,16 +176,15 @@ if __name__=='__main__':
                 #append the loss to the epoch losses
 
                 
-
                 da_loss = 0
                 if args.domain_adaptation:
                     da_output = model(da_images, grl=True)
                     da_loss = criterion(da_output, da_targets)
-                    da_loss.backward()
-                    da_loss = da_loss.item()
-
+                    (da_loss * args.grl_loss_weight).backward()
+                    da_loss = (da_loss * args.grl_loss_weight).item()
+                    del da_output, da_images
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
-                del loss, output, images, da_loss, da_output, da_images
+                del loss, output, images, da_loss
                 #optimize the parameters
                 model_optimizer.step()
                 #optimize the parameters of the classifier
@@ -197,12 +197,15 @@ if __name__=='__main__':
                     loss = criterion(output, targets)
                 scaler.scale(loss).backward()
                 if args.domain_adaptation:
+                    da_loss = 0
                     with torch.cuda.amp.autocast():
                         da_output = model(da_images, grl=True)
-                        loss = criterion(da_output, da_targets)
-                    scaler.scale(loss).backward()
-                epoch_losses = np.append(epoch_losses, loss.item())
-                del loss, output, images, da_loss, da_output, da_images
+                        da_loss = criterion(da_output, da_targets)
+                        
+                    scaler.scale((da_loss * args.grl_loss_weight)).backward()
+                    del da_output, da_images
+                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) ) 
+                del loss, output, images, da_loss
                 scaler.step(model_optimizer)
                 scaler.step(classifiers_optimizers[current_group_num])
                 scaler.update()
@@ -240,4 +243,4 @@ if __name__=='__main__':
     logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
-    """
+    

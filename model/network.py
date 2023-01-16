@@ -9,12 +9,12 @@ from model.layers import Flatten, L2Norm, GeM
 
 
 CHANNELS_NUM_IN_LAST_CONV = {
-        "resnet18": 512,
-        "resnet50": 2048,
-        "resnet101": 2048,
-        "resnet152": 2048,
-        "vgg16": 512,
-    }
+    "resnet18": 512,
+    "resnet50": 2048,
+    "resnet101": 2048,
+    "resnet152": 2048,
+    "vgg16": 512,
+}
 
 CHANNELS_AFTER_AVGPOOLING = {
     "resnet18": 512,
@@ -74,7 +74,6 @@ class GeoLocalizationNet(nn.Module):
     
     def forward(self, x, grl=False):
         features = self.backbone(x)
-        
         if grl==True:
             # perform adaptation round
             # logits output dim is num_domains
