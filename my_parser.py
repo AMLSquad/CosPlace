@@ -58,6 +58,7 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with images from the target for DA sets")
     parser.add_argument("--domain_adaptation", type=bool, default=False)
     parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")
+    parser.add_argument("--pseudo_target_folder", type=str, default="")
     args = parser.parse_args()
     
     if args.dataset_folder is None:

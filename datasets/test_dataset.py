@@ -12,7 +12,7 @@ def open_image(path):
     return Image.open(path).convert("RGB")
 
 
-class TestDataset(data.Dataset):
+class  TestDataset(data.Dataset):
     def __init__(self, dataset_folder, database_folder="database",
                  queries_folder="queries", positive_dist_threshold=25):
         """Dataset with images from database and queries, used for validation and test.
@@ -63,7 +63,7 @@ class TestDataset(data.Dataset):
         
         self.database_num = len(self.database_paths)
         self.queries_num = len(self.queries_paths)
-    
+        print(self.database_num)
     def __getitem__(self, index):
         image_path = self.images_paths[index]
         pil_img = open_image(image_path)

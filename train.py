@@ -7,14 +7,11 @@ if __name__=='__main__':
     import multiprocessing
     from datetime import datetime
     import torchvision.transforms as T
-
     import test
     import util
     import my_parser as parser
     import commons
     import cosface_loss
-    import sphereface_loss
-    import arcface_loss
     import augmentations
     from model import network
     from datasets.test_dataset import TestDataset
@@ -26,7 +23,7 @@ if __name__=='__main__':
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
 
-    experiment_name=""
+    experiment_name="DA_on_small_vanilla"
 
 
 
@@ -41,9 +38,6 @@ if __name__=='__main__':
 
     #### Model
     model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation)
-
-
-   
 
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 

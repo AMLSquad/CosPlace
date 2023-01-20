@@ -47,7 +47,7 @@ class TrainDataset(torch.utils.data.Dataset):
         if not os.path.exists(filename): #se il filename non esiste
             os.makedirs("cache", exist_ok=True) #crea la cartella cache
             logging.info(f"Cached dataset {filename} does not exist, I'll create it now.")
-            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
+            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, args.pseudo_target_folder) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
         elif current_group == 0:
             logging.info(f"Using cached dataset {filename}") #If a cache file is already been built
         
@@ -105,15 +105,17 @@ class TrainDataset(torch.utils.data.Dataset):
         return len(self.classes_ids)
     
     @staticmethod
-    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename):
+    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, pseudo_target_folder):
         logging.debug(f"Searching training images in {dataset_folder}")
         
         images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True)) #lista nomi di file con estensione jpg nel dataset_folder, sortati
         logging.debug(f"Found {len(images_paths)} images")
 
         #Do the same for synthetic night images
-        images_paths += sorted(glob(f"syntetic_night_augmentation/**/*.jpg", recursive=True))
-        logging.debug(f"Found {len(images_paths)} images")
+        if pseudo_target_folder:
+            images_paths += sorted(glob(f"{pseudo_target_folder}/**/*.jpg", recursive=True))
+            logging.debug(f"Pseudo target images found in {pseudo_target_folder} and added. Now there are {len(images_paths)} images")
+            #logging.debug(f"Found {len(images_paths)} images")
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")
         images_metadatas = [p.split("@") for p in images_paths]

@@ -156,3 +156,98 @@ Here is the bibtex to cite our paper
   month = {June}, 
   year = {2022}, }
 ```
+
+## Results
+
+<table>
+  <tr>
+    <th>Model</th>
+    <th>sf-xs</th>
+    <th>tokyo-xs</th>
+    <th>tokyo-night</th>
+  </tr>
+  <tr>
+    <td>Cosface</td>
+    <td>52.7 / 65.5</td>
+    <td>70.2 / 84.1</td>
+    <td>52.4 / 70.5</td>
+  </tr>
+  <tr>
+    <td>Arcface (s = 30, m = 0.5)</td>
+    <td>27.6 / 42.7</td>
+    <td>42.9 / 66.3</td>
+    <td>32.4 / 52.4</td> 
+  </tr>
+  <tr>
+    <td>Arcface (s = 50, m = 0.5)</td>
+    <td>32.8 / 47.0</td>
+    <td>49.2 / 69.8</td>
+    <td>32.4 / 52.4</td> 
+  </tr>
+  <tr>
+    <td>Sphereface (s = 30, m = 3)</td>
+    <td>42.0 / 56.1</td>
+    <td>62.5 / 76.5</td>
+    <td>46.7 / 56.2</td> 
+  </tr>
+  <tr>
+    <td>Sphereface (s = 50, m = 3)</td>
+    <td>44.0 / 58.5</td>
+    <td>61.3 / 77.8</td>
+    <td>43.8 / 61.9</td> 
+  </tr>
+  <tr>
+    <td>Sphereface (s = 50, m = 4)</td>
+    <td>4.3 / 9.9</td>
+    <td>7.0 / 23.2</td>
+    <td>4.8 / 15.2</td> 
+  </tr>
+  <tr>
+    <td>FDA+PP+DA</td>
+    <td>50.9 / 63.4</td>
+    <td>73.3 / 85.4</td>
+    <td>61.0 / 81.0</td> 
+  </tr>
+  <tr>
+    <td>FDA+PP</td>
+    <td>51.0 / 65.9</td>
+    <td>??</td>
+    <td>53.3 / 74.3</td> 
+  </tr>
+  <tr>
+    <td>FDA</td>
+    <td>51.3 / 65.2</td>
+    <td>71.7 / 83.8</td>
+    <td>53.3 / 69.5</td> 
+  </tr>
+  <tr>
+    <td>PP</td>
+    <td>48.6 / 61.9</td>
+    <td>67.6 / 82.2</td>
+    <td>50.5 / 71.4</td> 
+  </tr>
+  <tr>
+    <td>FDA on test</td>
+    <td>52.1 / 66.6</td>
+    <td>70.2 / 84.4</td>
+    <td>56.2 / 71.4</td> 
+  </tr>
+  <tr>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td> 
+  </tr><tr>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td> 
+  </tr><tr>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td> 
+  </tr>
+
+
+</table>
