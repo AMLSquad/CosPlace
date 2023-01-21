@@ -211,7 +211,7 @@ Here is the bibtex to cite our paper
   <tr>
     <td>FDA+PP</td>
     <td>51.0 / 65.9 / 71.0</td>
-    <td>??</td>
+    <td>69.8 / 84.1 / 88.6</td>
     <td>53.3 / 74.3 / 77.1</td> 
   </tr>
   <tr>
