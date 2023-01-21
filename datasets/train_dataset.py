@@ -91,6 +91,7 @@ class TrainDataset(torch.utils.data.Dataset):
             tensor_image = self.transform(tensor_image)
         
         
+        
         filename = os.path.basename(image_path)
         da_label = 1 if filename.startswith("night") else 0
 
@@ -108,7 +109,13 @@ class TrainDataset(torch.utils.data.Dataset):
     def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, pseudo_target_folder):
         logging.debug(f"Searching training images in {dataset_folder}")
         
-        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True)) #lista nomi di file con estensione jpg nel dataset_folder, sortati
+        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))
+        for image in images_paths:
+            print(image)
+            i = Image.open(image)
+            i.save("training_group/" + os.path.basename(image))
+        
+         #lista nomi di file con estensione jpg nel dataset_folder, sortati
         logging.debug(f"Found {len(images_paths)} images")
 
         #Do the same for synthetic night images

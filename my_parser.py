@@ -48,7 +48,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--device", type=str, default="cuda",
                         choices=["cuda", "cpu"], help="_")
     parser.add_argument("--seed", type=int, default=0, help="_")
-    parser.add_argument("--num_workers", type=int, default=2, help="_")
+    parser.add_argument("--num_workers", type=int, default=8, help="_")
     # Paths parameters
     parser.add_argument("--dataset_folder", type=str, default="small/",
                         help="path of the folder with train/val/test sets")
@@ -59,6 +59,8 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--domain_adaptation", type=bool, default=False)
     parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")
     parser.add_argument("--pseudo_target_folder", type=str, default="")
+    parser.add_argument("--test_queries_folder", type=str, default="queries_v1")
+    parser.add_argument("--experiment_name",type=str,default="")
     args = parser.parse_args()
     
     if args.dataset_folder is None:
