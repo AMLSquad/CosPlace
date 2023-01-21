@@ -239,7 +239,7 @@ Here is the bibtex to cite our paper
     <td>56.2 / 78.1 / 84.8</td> 
   </tr><tr>
     <td>FDA+PP+DA (alpha=0.01)</td>
-    <td>R@1 50.8 / 65.4 / 70.2</td>
+    <td>50.8 / 65.4 / 70.2</td>
     <td>71.4 / 86.0 / 88.9</td>
     <td>55.2 / 78.1 / 83.8</td> 
   </tr><tr>
