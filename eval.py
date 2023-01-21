@@ -1,4 +1,5 @@
 
+
 import sys
 import torch
 import logging
@@ -6,7 +7,7 @@ import multiprocessing
 from datetime import datetime
 
 import test
-import parser
+import my_parser as parser 
 import commons
 from model import network
 from datasets.test_dataset import TestDataset
@@ -30,15 +31,22 @@ logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.c
 if args.resume_model is not None:
     logging.info(f"Loading model from {args.resume_model}")
     model_state_dict = torch.load(args.resume_model)
+    if args.domain_adaptation:
+        del model_state_dict["discriminator.1.weight"]
+        del model_state_dict["discriminator.1.bias"]
+        del model_state_dict["discriminator.3.weight"]
+        del model_state_dict["discriminator.3.bias"]
+        del model_state_dict["discriminator.5.weight"]
+        del model_state_dict["discriminator.5.bias"]
     model.load_state_dict(model_state_dict)
 else:
     logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +
-                 "Evaluation will be computed using randomly initialized weights.")
+                "Evaluation will be computed using randomly initialized weights.")
 
 model = model.to(args.device)
 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder=args.test_queries_folder,
+                    positive_dist_threshold=args.positive_dist_threshold)
 
 recalls, recalls_str = test.test(args, test_ds, model)
 logging.info(f"{test_ds}: {recalls_str}")

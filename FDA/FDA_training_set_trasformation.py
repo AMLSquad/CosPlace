@@ -5,9 +5,11 @@ import torch
 import older_scipy
 import os
 import random
-source_directory = 'prova\\'
-target_directory = 'night'
-save_directory = 'night_train'
+from glob import glob
+
+source_directory = 'small/test/queries_v1/'
+target_directory = 'small/train/'
+output_directory = 'small/test/queries_v1_delighted/'
 #target_images = os.listdir()
 
 
@@ -15,8 +17,8 @@ save_directory = 'night_train'
 targets_images = os.listdir(target_directory)
 
 def transform(source: str, target, dir):
-    im_src = Image.open("demo_images/day.jpg").convert('RGB')
-    im_trg = Image.open("demo_images/night.jpg").convert('RGB')
+    im_src = Image.open(source).convert('RGB')
+    im_trg = Image.open(target).convert('RGB')
 
     w,h = im_src.size
 
@@ -40,18 +42,23 @@ def transform(source: str, target, dir):
     src_in_trg = src_in_trg.transpose((1,2,0))
     src_in_trg = src_in_trg.astype(int)
     #Image.fromarray(np.uint8(src_in_trg)).save('demo_images/src_in_tar.png')
-    name = source.split('/')[-1].replace('@','night@',1)
+    name = source.split('/')[-1].replace('@','day@',1)
+    
     older_scipy.toimage(src_in_trg, cmin=0.0, cmax=255.0).resize((w,h)).save(f'{dir}/{name}')
 
 
 
 
-for dir in os.listdir(source_directory):
-    dir_path = os.path.join(source_directory,dir)
-    os.mkdir(os.path.join(save_directory,dir))
-    for file in os.listdir(dir_path):
-        random_index = int(random.uniform(0,105))
-        transform(os.join.path(dir_path,file),os.join.path(target_directory,targets_images[random_index]),os.path.join(save_directory,dir))
+
+if not os.path.isdir(output_directory):
+    os.makedirs(output_directory)
+source_images_paths = sorted(glob(f"{source_directory}/*.jpg", recursive=True))
+targets_images_paths = sorted(glob(f"{target_directory}/**/*.jpg", recursive=True))
+for source_image in source_images_paths:
+    index = int(random.uniform(0, len(targets_images_paths)))
+    
+    transform(source_image, targets_images_paths[index], output_directory)
+    
 
         
 

@@ -3,6 +3,7 @@ import os
 import torch
 import random
 import logging
+from our_code.post_processing_night_image import apply_post_processing
 import numpy as np
 from glob import glob
 from PIL import Image
@@ -19,7 +20,7 @@ def open_image(path):
 
 class TrainDataset(torch.utils.data.Dataset):
     def __init__(self, args, dataset_folder, M=10, alpha=30, N=5, L=2,
-                 current_group=0, min_images_per_class=10):
+                 current_group=0, min_images_per_class=10, preprocessing=False):
         """
         Parameters (please check our paper for a clearer explanation of the parameters).
         ----------
@@ -40,14 +41,14 @@ class TrainDataset(torch.utils.data.Dataset):
         self.current_group = current_group
         self.dataset_folder = dataset_folder
         self.augmentation_device = args.augmentation_device
-        
+        self.preprocessing = preprocessing
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
         dataset_name = os.path.basename(args.dataset_folder)
         filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch" 
         if not os.path.exists(filename): #se il filename non esiste
             os.makedirs("cache", exist_ok=True) #crea la cartella cache
             logging.info(f"Cached dataset {filename} does not exist, I'll create it now.")
-            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
+            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, args.pseudo_target_folder) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
         elif current_group == 0:
             logging.info(f"Using cached dataset {filename}") #If a cache file is already been built
         
@@ -83,6 +84,9 @@ class TrainDataset(torch.utils.data.Dataset):
             logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
             raise e
         
+        if self.preprocessing:
+            pil_image = apply_post_processing(pil_image)
+
         tensor_image = T.functional.to_tensor(pil_image)
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
             f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."
@@ -90,7 +94,14 @@ class TrainDataset(torch.utils.data.Dataset):
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)
         
-        return tensor_image, class_num, image_path
+        
+        
+        
+        
+        filename = os.path.basename(image_path)
+        da_label = 1 if filename.startswith("night") else 0
+
+        return tensor_image, class_num, image_path, da_label
     
     def get_images_num(self):
         """Return the number of images within this group."""
@@ -101,15 +112,23 @@ class TrainDataset(torch.utils.data.Dataset):
         return len(self.classes_ids)
     
     @staticmethod
-    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename):
+    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, pseudo_target_folder):
         logging.debug(f"Searching training images in {dataset_folder}")
         
-        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True)) #lista nomi di file con estensione jpg nel dataset_folder, sortati
+        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))
+        for image in images_paths:
+            print(image)
+            i = Image.open(image)
+            i.save("training_group/" + os.path.basename(image))
+        
+         #lista nomi di file con estensione jpg nel dataset_folder, sortati
         logging.debug(f"Found {len(images_paths)} images")
 
         #Do the same for synthetic night images
-        images_paths += sorted(glob(f"syntetic_night_augmentation/**/*.jpg", recursive=True))
-        logging.debug(f"Found {len(images_paths)} images")
+        if pseudo_target_folder:
+            images_paths += sorted(glob(f"{pseudo_target_folder}/**/*.jpg", recursive=True))
+            logging.debug(f"Pseudo target images found in {pseudo_target_folder} and added. Now there are {len(images_paths)} images")
+            #logging.debug(f"Found {len(images_paths)} images")
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")
         images_metadatas = [p.split("@") for p in images_paths]

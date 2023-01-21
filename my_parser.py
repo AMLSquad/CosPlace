@@ -10,7 +10,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--alpha", type=int, default=30, help="_")
     parser.add_argument("--N", type=int, default=5, help="_")
     parser.add_argument("--L", type=int, default=2, help="_")
-    parser.add_argument("--groups_num", type=int, default=8, help="_")
+    parser.add_argument("--groups_num", type=int, default=1, help="_")
     parser.add_argument("--min_images_per_class", type=int, default=10, help="_")
     # Model parameters
     parser.add_argument("--backbone", type=str, default="resnet18",
@@ -24,7 +24,7 @@ def parse_arguments(is_training: bool = True):
                         choices=["cuda", "cpu"],
                         help="on which device to run data augmentation")
     parser.add_argument("--batch_size", type=int, default=32, help="_")
-    parser.add_argument("--epochs_num", type=int, default=50, help="_")
+    parser.add_argument("--epochs_num", type=int, default=3, help="_")
     parser.add_argument("--iterations_per_epoch", type=int, default=10000, help="_")
     parser.add_argument("--lr", type=float, default=0.00001, help="_")
     parser.add_argument("--classifiers_lr", type=float, default=0.01, help="_")
@@ -50,13 +50,23 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--seed", type=int, default=0, help="_")
     parser.add_argument("--num_workers", type=int, default=8, help="_")
     # Paths parameters
-    parser.add_argument("--dataset_folder", type=str, default=None,
+    parser.add_argument("--dataset_folder", type=str, default="small/",
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
                         help="name of directory on which to save the logs, under logs/save_dir")
-    
+    parser.add_argument("--target_dataset_folder", type=str, default="tokyo_xs/test/night/",
+                        help="path of the folder with images from the target for DA sets")
+    parser.add_argument("--domain_adaptation", type=bool, default=False)
+    parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")
+    parser.add_argument("--pseudo_target_folder", type=str, default="")
+    parser.add_argument("--test_queries_folder", type=str, default="queries_v1")
+    parser.add_argument("--experiment_name",type=str,default="")
+    parser.add_argument("--loss",type=str, default="cosface")
+    parser.add_argument("--preprocessing", type=str, default=False)
     args = parser.parse_args()
     
+    
+
     if args.dataset_folder is None:
         try:
             args.dataset_folder = os.environ['SF_XL_PROCESSED_FOLDER']
@@ -80,5 +90,9 @@ def parse_arguments(is_training: bool = True):
     args.test_set_folder = os.path.join(args.dataset_folder, "test")
     if not os.path.exists(args.test_set_folder):
         raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
-    
+
+    if args.loss not in ["cosface", "arcface", "sphereface"]:
+        raise Exception("No valid loss for --loss arg, please try again typing 'cosface', 'sphereface' or 'arcface'")
+
+
     return args
