@@ -84,7 +84,9 @@ class TrainDataset(torch.utils.data.Dataset):
             logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
             raise e
         
-        if self.preprocessing:
+        filename = os.path.basename(image_path)
+        da_label = 1 if filename.startswith("night") else 0
+        if self.preprocessing and da_label:
             pil_image = apply_post_processing(pil_image)
 
         tensor_image = T.functional.to_tensor(pil_image)
@@ -98,8 +100,7 @@ class TrainDataset(torch.utils.data.Dataset):
         
         
         
-        filename = os.path.basename(image_path)
-        da_label = 1 if filename.startswith("night") else 0
+        
 
         return tensor_image, class_num, image_path, da_label
     
