@@ -233,10 +233,10 @@ Here is the bibtex to cite our paper
     <td>56.2 / 71.4</td> 
   </tr>
   <tr>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td> 
+    <td>DA</td>
+    <td>52.7 / 68.0</td>
+    <td> 71.7 / 86.7</td>
+    <td>56.2 / 78.1</td> 
   </tr><tr>
     <td></td>
     <td></td>
