@@ -117,10 +117,7 @@ class TrainDataset(torch.utils.data.Dataset):
         logging.debug(f"Searching training images in {dataset_folder}")
         
         images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))
-        for image in images_paths:
-            print(image)
-            i = Image.open(image)
-            i.save("training_group/" + os.path.basename(image))
+        
         
          #lista nomi di file con estensione jpg nel dataset_folder, sortati
         logging.debug(f"Found {len(images_paths)} images")
