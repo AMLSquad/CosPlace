@@ -87,7 +87,7 @@ class TrainDataset(torch.utils.data.Dataset):
         filename = os.path.basename(image_path)
         da_label = 1 if filename.startswith("night") else 0
         if self.preprocessing and da_label:
-            pil_image = apply_post_processing(pil_image)
+            pil_image = apply_post_processing(filename)
 
         tensor_image = T.functional.to_tensor(pil_image)
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
