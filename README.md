@@ -203,7 +203,7 @@ Here is the bibtex to cite our paper
     <td>4.8 / 15.2 / 24.8</td> 
   </tr>
   <tr>
-    <td>FDA+PP+DA (alpha 0.1)</td>
+    <td>FDA+PP+DA (alpha = 0.1)</td>
     <td>50.9 / 63.4 / 69.1</td>
     <td>73.3 / 85.4 / 88.6</td>
     <td>61.0 / 81.0 / 83.8</td> 
@@ -238,15 +238,15 @@ Here is the bibtex to cite our paper
     <td>71.7 / 86.7 / 91.1,</td>
     <td>56.2 / 78.1 / 84.8</td> 
   </tr><tr>
-    <td>FDA+PP+DA (alpha=0.01)</td>
+    <td>FDA+PP+DA (alpha = 0.01)</td>
     <td>50.4 / 63.9 / 69.0</td>
     <td>71.4 / 86.0 / 89.8</td>
     <td>59.0 / 79.0 / 83.8</td> 
   </tr><tr>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td> 
+    <td>FDA+PP+DA (alpha = 1</td>
+    <td>R@1: 47.2, R@5: 62.5, R@10: 67.7</td>
+    <td>R@1: 58.1, R@5: 71.4, R@10: 78.1</td>
+    <td>R@1: 68.3, R@5: 82.9, R@10: 87.3</td> 
   </tr>
 
 
