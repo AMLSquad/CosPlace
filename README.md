@@ -244,9 +244,9 @@ Here is the bibtex to cite our paper
     <td>59.0 / 79.0 / 83.8</td> 
   </tr><tr>
     <td>FDA+PP+DA (alpha = 1</td>
-    <td>R@1: 47.2, R@5: 62.5, R@10: 67.7</td>
-    <td>R@1: 58.1, R@5: 71.4, R@10: 78.1</td>
-    <td>R@1: 68.3, R@5: 82.9, R@10: 87.3</td> 
+    <td>47.2 / 62.5 / 67.7</td>
+    <td>58.1 / 71.4 / 78.1</td>
+    <td>68.3 / 82.9 / 87.3</td> 
   </tr>
 
 
