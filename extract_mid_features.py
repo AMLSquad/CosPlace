@@ -1,3 +1,14 @@
+
+
+def add_and_save_in_set(set, descriptor, filename):
+    if filename == "SKIP":
+        return set
+    if filename in set:
+        return set
+    set.add(filename)
+    torch.save(descriptor, "compact/" + filename)
+    return set
+
 if __name__ == "__main__":
     import sys
     import torch
@@ -131,13 +142,34 @@ if __name__ == "__main__":
 
     if args.use_amp16:
         scaler = torch.cuda.amp.GradScaler()
+    """
+    images_set = set()
+    print(groups[0].classes_ids)
+    for idx, class_id in enumerate(groups[0].classes_ids):
+        for j, image in enumerate(groups[0].images_per_class[class_id]):
+            image, targets, filename, _ = groups[0].__getitem__(idx, j)
+            image = image.unsqueeze(0)
+            image  = image.to(args.device)
+            descriptor = model(image)
+            torch.save(descriptor, "compact/" + filename)
+    """
+    for idx, class_id in enumerate(val_ds.images_paths):
+        image,  _, name= val_ds.__getitem__(idx)
+        image = image.unsqueeze(0)
+        image  = image.to(args.device)
 
+        descriptor = model(image)
+        torch.save(descriptor, "compact/val/" + name)
+
+        
+"""
     for epoch_num in range(start_epoch_num, args.epochs_num):
         
         #### Train
         epoch_start_time = datetime.now()
         # Select classifier and dataloader according to epoch
         current_group_num = epoch_num % args.groups_num
+        print(current_group_num)
         classifiers[current_group_num] = classifiers[current_group_num].to(args.device)
         util.move_to_device(classifiers_optimizers[current_group_num], args.device)
         # setup the dataloader
@@ -155,12 +187,12 @@ if __name__ == "__main__":
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
         for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
-            images, targets, _, _ = next(dataloader_iterator)
+            images, targets, filename, _ = next(dataloader_iterator)
             
             images, targets = images.to(args.device), targets.to(args.device)
             
             if args.domain_adaptation:
-                da_images, da_targets = next(da_dataloader)
+                da_images, da_targets, da_filename = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
             if args.augmentation_device == "cuda":
@@ -174,78 +206,48 @@ if __name__ == "__main__":
             if not args.use_amp16:
                 #Get descriptors from the model (ends with fc and normalization)
                 descriptors = model(images)
+                for idx, d in enumerate(descriptors):
+                    if not filename[idx] in images_set:
+                        add_and_save_in_set(images_set, descriptors[idx], filename[idx])
+
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
-                output = classifiers[current_group_num](descriptors, targets)
-                #Applies the softmax loss
-                loss = criterion(output, targets)
-                loss.backward()
+                
                 #append the loss to the epoch losses
 
                 
                 da_loss = 0
                 if args.domain_adaptation:
                     da_output = model(da_images, grl=True)
-                    da_loss = criterion(da_output, da_targets)
-                    (da_loss * args.grl_loss_weight).backward()
-                    da_loss = (da_loss * args.grl_loss_weight).item()
-                    del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
-                del loss, output, images, da_loss
+                    for idx, d in enumerate(da_output):
+                        add_and_save_in_set(images_set, da_output[idx], da_filename[idx])
+                        
+                    
                 #optimize the parameters
-                model_optimizer.step()
                 #optimize the parameters of the classifier
-                classifiers_optimizers[current_group_num].step()
             #todo: add domain adaptation here
             else:  # Use AMP 16
                 with torch.cuda.amp.autocast():
                     descriptors = model(images)
-                    output = classifiers[current_group_num](descriptors, targets)
-                    loss = criterion(output, targets)
-                scaler.scale(loss).backward()
+                    for idx, d in enumerate(descriptors):
+                        add_and_save_in_set(images_set, descriptors[idx], filename[idx])
+
                 if args.domain_adaptation:
                     da_loss = 0
                     with torch.cuda.amp.autocast():
-                        da_output = model(da_images, grl=True)
-                        da_loss = criterion(da_output, da_targets)
-                        
-                    scaler.scale((da_loss * args.grl_loss_weight)).backward()
+                        descriptors = model(da_images, grl=True)
+                        for idx, d in enumerate(descriptors):
+                            add_and_save_in_set(images_set, da_output[idx], da_filename[idx])
                     del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) ) 
-                del loss, output, images, da_loss
-                scaler.step(model_optimizer)
-                scaler.step(classifiers_optimizers[current_group_num])
-                scaler.update()
+                
         
-        classifiers[current_group_num] = classifiers[current_group_num].cpu()
-        util.move_to_device(classifiers_optimizers[current_group_num], "cpu")
         
-        logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                    f"loss = {epoch_losses.mean():.4f}")
-        
-        #### Evaluation
-        recalls, recalls_str = test.test(args, val_ds, model)
-        logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
-        is_best = recalls[0] > best_val_recall1
-        best_val_recall1 = max(recalls[0], best_val_recall1)
-        # Save checkpoint, which contains all training parameters
-        util.save_checkpoint({
-            "epoch_num": epoch_num + 1,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": model_optimizer.state_dict(),
-            "classifiers_state_dict": [c.state_dict() for c in classifiers],
-            "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
-            "best_val_recall1": best_val_recall1
-        }, is_best, output_folder)
 
 
     logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
 
-    #### Test best model on test set v1
-    best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")
-    model.load_state_dict(best_model_state_dict)
-
-    logging.info(f"Now testing on the test set: {test_ds}")
-    recalls, recalls_str = test.test(args, test_ds, model)
-    logging.info(f"{test_ds}: {recalls_str}")
+    
 
     logging.info("Experiment finished (without any errors)")
+
+
+"""

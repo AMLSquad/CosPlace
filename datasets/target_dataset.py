@@ -31,7 +31,7 @@ class TargetDataset(data.Dataset):
         pil_img = open_image(image_path)
         normalized_img = self.base_transform(pil_img)
         #1 stands for night
-        return normalized_img, 1 
+        return normalized_img, 1, image_path
 
     def __len__(self):
         return len(self.images_paths)
@@ -40,7 +40,7 @@ class TargetDataset(data.Dataset):
 class DomainAdaptationDataLoader(data.DataLoader):
     def __init__(self, source_dataset, target_dataset, *args, **kwargs):
 
-        self.source_dim = int(kwargs["batch_size"] * 1 / 2)
+        self.source_dim = int(kwargs["batch_size"] * 2 / 3)
         self.target_dim = kwargs["batch_size"] - self.source_dim
         del kwargs["batch_size"]
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim, **kwargs)
@@ -54,9 +54,13 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def  __next__(self):
         try:
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+            source_images = source_images[source_domain_labels == 0]
+            source_domain_labels = source_domain_labels[source_domain_labels == 0]
         except StopIteration:
             self.source_domain_iterator = self.source_domain_loader.__iter__()
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+            source_images = source_images[source_domain_labels == 0]
+            source_domain_labels = source_domain_labels[source_domain_labels == 0]
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
         except:

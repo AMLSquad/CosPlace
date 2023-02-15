@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageEnhance, ImageColor, ImageFilter
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import numpy as np
 from random import gauss
 import os

@@ -17,7 +17,7 @@ if __name__ == "__main__":
     import augmentations
     from model import network
     from datasets.test_dataset import TestDataset
-    from datasets.train_dataset import TrainDataset
+    from datasets.train_dataset_compact import TrainDataset
     from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
     from torch.utils.data import DataLoader
     from itertools import chain
@@ -112,21 +112,7 @@ if __name__ == "__main__":
                 f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
 
 
-    if args.augmentation_device == "cuda":
-        gpu_augmentation = T.Compose([
-                augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
-                                                        contrast=args.contrast,
-                                                        saturation=args.saturation,
-                                                        hue=args.hue),
-                augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                            scale=[1-args.random_resized_crop, 1]),
-                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
-        target_augmentation = T.Compose([
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                            scale=[1-args.random_resized_crop, 1]),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+    
 
 
     if args.use_amp16:
@@ -154,7 +140,7 @@ if __name__ == "__main__":
         model = model.train()
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
-        for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
+        for iteration in tqdm(range(1000), ncols=100):
             images, targets, _, _ = next(dataloader_iterator)
             
             images, targets = images.to(args.device), targets.to(args.device)
@@ -163,8 +149,7 @@ if __name__ == "__main__":
                 da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
-            if args.augmentation_device == "cuda":
-                images = gpu_augmentation(images)
+            
             
             model_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()

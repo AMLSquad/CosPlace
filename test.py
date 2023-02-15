@@ -76,7 +76,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
             if np.any(np.in1d(preds[:n], positives_per_query[query_index])):
                 recalls[i:] += 1
                 break
-
+                
             
     # Divide by queries_num and multiply by 100, so the recalls are in percentages
     recalls = recalls / eval_ds.queries_num * 100
