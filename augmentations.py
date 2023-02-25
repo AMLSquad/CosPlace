@@ -60,8 +60,15 @@ class DeviceAgosticAdjustBrightness():
         assert len(images.shape) == 4, f"images should be a batch of images, but it has shape {images.shape}"
         B, C, H, W = images.shape
         # Applies a different color jitter to each image
-        offset = random.randint(-0.5, 0.5)
-        augmented_images = [TF.adjust_brightness(img, self.brightness_factor + offset ).unsqueeze(0) for img in images]
+        offset = random.uniform(-0.5, 0.5)
+        augmented_images = []
+        for img in images:
+            #transform with probability 50%
+            if random.random() < 0.5:
+                augmented_img = TF.adjust_brightness(img, self.brightness_factor + offset).unsqueeze(0)
+                augmented_images.append(augmented_img)
+            else:
+                augmented_images.append(img.unsqueeze(0))
         augmented_images = torch.cat(augmented_images)
         assert augmented_images.shape == torch.Size([B, C, H, W])
         return augmented_images
@@ -74,24 +81,44 @@ class DeviceAgnosticContrast():
         assert len(images.shape) == 4, f"images should be a batch of images, but it has shape {images.shape}"
         B, C, H, W = images.shape
         # Applies a different color jitter to each image
-        offset = random.randint(-0.05, 0.05)
-        augmented_images = [TF.adjust_contrast(img, self.contrast_factor + offset ).unsqueeze(0) for img in images]
+        offset = random.uniform(-0.05, 0.05)
+        augmented_images = []
+        for img in images:
+            #transform with probability 50%
+            if random.random() < 0.5:
+                augmented_img = TF.adjust_contrast(img, self.contrast_factor + offset ).unsqueeze(0)
+                augmented_images.append(augmented_img)
+            else:
+                augmented_images.append(img.unsqueeze(0))
+        augmented_images = torch.cat(augmented_images)
         augmented_images = torch.cat(augmented_images)
         assert augmented_images.shape == torch.Size([B, C, H, W])
         return augmented_images
     
-class DeviceAgnosticHue(): 
-    def __init__(self, hue_factor: float = 0.5):
-        self.hue_factor = hue_factor
+class DeviceAgosticAdjustBrightnessAndContrast():
+    def __init__(self, brightness_factor: float = 0.65, contrast_factor: float = 1.15):
+        self.brightness_factor = brightness_factor
+        self.contrast_factor = contrast_factor
 
     def __call__(self, images: torch.Tensor) -> torch.Tensor:
         assert len(images.shape) == 4, f"images should be a batch of images, but it has shape {images.shape}"
         B, C, H, W = images.shape
         # Applies a different color jitter to each image
-        augmented_images = [TF.adjust_hue(img, self.hue_factor ).unsqueeze(0) for img in images]
+        offsetBright = random.uniform(-0.5, 0.5)
+        offsetContrast = random.uniform(-0.05, 0.05)
+        augmented_images = []
+        for img in images:
+            #transform with probability 50%
+            if random.random() < 0.5:
+                augmented_img = TF.adjust_brightness(img, self.brightness_factor + offsetBright).unsqueeze(0)
+                augmented_img = TF.adjust_contrast(augmented_img, self.contrast_factor + offsetContrast ).unsqueeze(0)
+                augmented_images.append(augmented_img)
+            else:
+                augmented_images.append(img.unsqueeze(0))
         augmented_images = torch.cat(augmented_images)
         assert augmented_images.shape == torch.Size([B, C, H, W])
         return augmented_images
+    
     
 if __name__ == "__main__":
     """
@@ -104,7 +131,7 @@ if __name__ == "__main__":
     
     # Initialize DeviceAgnosticRandomResizedCrop
     brightness = 0.5
-    augs = DeviceAgnosticHue()
+    augs = DeviceAgosticAdjustBrightness()
     # Create a batch with 2 astronaut images
     pil_image = Image.fromarray(data.astronaut())
     tensor_image = T.functional.to_tensor(pil_image).unsqueeze(0)

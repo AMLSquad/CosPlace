@@ -113,31 +113,23 @@ logging.info(f"There are {len(groups[0])} classes for the first group, " +
 
 if args.augmentation_device == "cuda":
     if args.augmentation_type == "brightness":
-        augType = [augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness)]
+        augType = augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness)
     elif args.augmentation_type == "contrast":
-        augType = [augmentations.DeviceAgnosticContrast(args.increase_contrast)]
+        augType = augmentations.DeviceAgnosticContrast(args.increase_contrast)
     elif args.augmentation_type == "brightness and contrast":
-        augType = [augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness), augmentations.DeviceAgnosticContrast(args.increase_contrast)]
+        augType = augmentations.DeviceAgosticAdjustBrightnessAndContrast(args.reduce_brightness,args.increase_contrast)
     else:
-        augType = [augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
+        augType = augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
-                                                    hue=args.hue)]
-    if len(augType) == 1:
-        gpu_augmentation = T.Compose([
-            augType[0],
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                        scale=[1-args.random_resized_crop, 1]),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-    else:
-        gpu_augmentation = T.Compose([
-            augType[0],
-            augType[1],
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                        scale=[1-args.random_resized_crop, 1]),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+                                                    hue=args.hue)
+
+    gpu_augmentation = T.Compose([
+        augType,
+        augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+                                                    scale=[1-args.random_resized_crop, 1]),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
     target_augmentation = T.Compose([
         augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
