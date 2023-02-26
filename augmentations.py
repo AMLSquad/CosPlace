@@ -95,7 +95,7 @@ class DeviceAgnosticContrast():
         return augmented_images
     
 class DeviceAgosticAdjustBrightnessContrastSaturation():
-    def __init__(self, brightness_factor: float = 0.65, contrast_factor: float = 1.15, saturation_factor: float = 1.15):
+    def __init__(self, brightness_factor: float = 0.65, contrast_factor: float = 1.15, saturation_factor: float = 0.85):
         self.brightness_factor = brightness_factor
         self.contrast_factor = contrast_factor
         self.saturation_factor = saturation_factor

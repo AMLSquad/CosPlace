@@ -66,6 +66,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--augmentation_type", type=str, default="ColorJitter")
     parser.add_argument("--reduce_brightness", type=float, default=0.65)
     parser.add_argument("--increase_contrast", type=float, default=1.15)
+    parser.add_argument("--decrease_saturation", type=float, default=0.85)
     args = parser.parse_args()
     
     

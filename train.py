@@ -116,8 +116,10 @@ if args.augmentation_device == "cuda":
         augType = augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness)
     elif args.augmentation_type == "contrast":
         augType = augmentations.DeviceAgnosticContrast(args.increase_contrast)
-    elif args.augmentation_type == "brightness and contrast":
-        augType = augmentations.DeviceAgosticAdjustBrightnessAndContrast(args.reduce_brightness,args.increase_contrast)
+    elif args.augmentation_type == "saturation":
+        augType = augmentations.DeviceAgosticAdjustSaturation(args.decrease_saturation)
+    elif args.augmentation_type == "bcs":
+        augType = augmentations.DeviceAgosticAdjustBrightnessContrastSaturation(args.reduce_brightness,args.increase_contrast, args.decrease_saturation)
     else:
         augType = augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
