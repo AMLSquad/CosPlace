@@ -91,7 +91,6 @@ class DeviceAgnosticContrast():
             else:
                 augmented_images.append(img.unsqueeze(0))
         augmented_images = torch.cat(augmented_images)
-        augmented_images = torch.cat(augmented_images)
         assert augmented_images.shape == torch.Size([B, C, H, W])
         return augmented_images
     
@@ -118,6 +117,10 @@ class DeviceAgosticAdjustBrightnessAndContrast():
         augmented_images = torch.cat(augmented_images)
         assert augmented_images.shape == torch.Size([B, C, H, W])
         return augmented_images
+    
+class DeviceAgosticAdjustSaturation():
+    def __init__(self, contrast_factor: float = 1.15):
+        self.contrast_factor = contrast_factor
     
     
 if __name__ == "__main__":
