@@ -112,8 +112,8 @@ class DeviceAgosticAdjustBrightnessContrastSaturation():
             #transform with probability 50%
             if random.random() < 0.5:
                 augmented_img = TF.adjust_brightness(img, self.brightness_factor + offsetBright).unsqueeze(0)
-                augmented_img = TF.adjust_contrast(augmented_img, self.contrast_factor + offsetContrast ).unsqueeze(0)
                 augmented_img = TF.adjust_saturation(augmented_img, self.saturation_factor + offsetSaturation ).unsqueeze(0)
+                augmented_img = TF.adjust_contrast(augmented_img, self.contrast_factor + offsetContrast ).unsqueeze(0)
                 augmented_images.append(augmented_img)
             else:
                 augmented_images.append(img.unsqueeze(0))
