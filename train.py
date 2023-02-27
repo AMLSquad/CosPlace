@@ -112,6 +112,7 @@ logging.info(f"There are {len(groups[0])} classes for the first group, " +
 
 
 if args.augmentation_device == "cuda":
+    apply_aug = True
     if args.augmentation_type == "brightness":
         augType = augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness)
     elif args.augmentation_type == "contrast":
@@ -120,18 +121,29 @@ if args.augmentation_device == "cuda":
         augType = augmentations.DeviceAgosticAdjustSaturation(args.decrease_saturation)
     elif args.augmentation_type == "bcs":
         augType = augmentations.DeviceAgosticAdjustBrightnessContrastSaturation(args.reduce_brightness,args.increase_contrast, args.decrease_saturation)
-    else:
+    elif args.augmentation_type == "colorjitter":
         augType = augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue)
-
-    gpu_augmentation = T.Compose([
-        augType,
-        augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                    scale=[1-args.random_resized_crop, 1]),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    elif args.augmentation_type == "none":
+        apply_aug = False
+    else:
+        logging.debug("No valid augmentation, please try again typing 'brightness', 'contrast', 'saturation', 'bcs', 'colorjitter' or 'none'")
+        exit
+    if apply_aug:
+        gpu_augmentation = T.Compose([
+            augType,
+            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+                                                        scale=[1-args.random_resized_crop, 1]),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+    else:
+        gpu_augmentation = T.Compose([
+            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+                                                        scale=[1-args.random_resized_crop, 1]),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
     target_augmentation = T.Compose([
         augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
