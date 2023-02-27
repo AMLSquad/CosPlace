@@ -68,7 +68,7 @@ model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
 #### Datasets
 # Each group is treated as a different dataset
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                    current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing) for n in range(args.groups_num)]
+                    current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
 
 
 # Each group has its own classifier, which depends on the number of classes in the group

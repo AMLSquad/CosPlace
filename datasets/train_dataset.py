@@ -20,7 +20,7 @@ def open_image(path):
 
 class TrainDataset(torch.utils.data.Dataset):
     def __init__(self, args, dataset_folder, M=10, alpha=30, N=5, L=2,
-                 current_group=0, min_images_per_class=10, preprocessing=False):
+                 current_group=0, min_images_per_class=10, preprocessing=False, base_preprocessing = False):
         """
         Parameters (please check our paper for a clearer explanation of the parameters).
         ----------
@@ -42,6 +42,7 @@ class TrainDataset(torch.utils.data.Dataset):
         self.dataset_folder = dataset_folder
         self.augmentation_device = args.augmentation_device
         self.preprocessing = preprocessing
+        self.base_preprocessing = base_preprocessing
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
         dataset_name = os.path.basename(args.dataset_folder)
         filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch" 
@@ -51,6 +52,9 @@ class TrainDataset(torch.utils.data.Dataset):
             self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, args.pseudo_target_folder) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
         elif current_group == 0:
             logging.info(f"Using cached dataset {filename}") #If a cache file is already been built
+        
+        if base_preprocessing:
+            logging.info("Using base preprocessing")
         
         classes_per_group, self.images_per_class = torch.load(filename)
         if current_group >= len(classes_per_group):
@@ -77,29 +81,30 @@ class TrainDataset(torch.utils.data.Dataset):
         class_id = self.classes_ids[class_num]
         # Pick a random image among those in this class.
         image_path = random.choice(self.images_per_class[class_id])
-        
-        try:
-            pil_image = open_image(image_path)
-        except Exception as e:
-            logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
-            raise e
+        if self.base_preprocessing:
+            if random.random() < 0.5:
+                #apply preprocessing with a probability of 0.5
+                pil_image = apply_post_processing(image_path)
+        else:
+            try:
+                pil_image = open_image(image_path)
+            except Exception as e:
+                logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
+                raise e
         
         filename = os.path.basename(image_path)
         da_label = 1 if filename.startswith("night") else 0
         if self.preprocessing and da_label:
             pil_image = apply_post_processing(image_path)
-
+        
+        
+        
         tensor_image = T.functional.to_tensor(pil_image)
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
             f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."
         
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)
-        
-        
-        
-        
-        
         
 
         return tensor_image, class_num, image_path, da_label

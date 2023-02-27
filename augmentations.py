@@ -111,10 +111,10 @@ class DeviceAgosticAdjustBrightnessContrastSaturation():
         for img in images:
             #transform with probability 50%
             if random.random() < 0.5:
-                augmented_img = TF.adjust_brightness(img, self.brightness_factor + offsetBright).unsqueeze(0)
-                augmented_img = TF.adjust_saturation(augmented_img, self.saturation_factor + offsetSaturation ).unsqueeze(0)
-                augmented_img = TF.adjust_contrast(augmented_img, self.contrast_factor + offsetContrast ).unsqueeze(0)
-                augmented_images.append(augmented_img)
+                augmented_img = TF.adjust_brightness(img, self.brightness_factor + offsetBright)
+                augmented_img = TF.adjust_saturation(augmented_img, self.saturation_factor + offsetSaturation )
+                augmented_img = TF.adjust_contrast(augmented_img, self.contrast_factor + offsetContrast )
+                augmented_images.append(augmented_img.unsqueeze(0))
             else:
                 augmented_images.append(img.unsqueeze(0))
         augmented_images = torch.cat(augmented_images)
