@@ -84,7 +84,7 @@ class TrainDataset(torch.utils.data.Dataset):
         if self.base_preprocessing:
             if random.random() < 0.5:
                 #apply preprocessing with a probability of 0.5
-                pil_image = apply_post_processing(image_path)
+                pil_image = apply_post_processing(image_path, False)
         else:
             try:
                 pil_image = open_image(image_path)

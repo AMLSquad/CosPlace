@@ -87,14 +87,36 @@ def add_gaussian_noise(image):
     
     return image
 
-def apply_post_processing(filename):
+def apply_post_processing(filename, fda_applied = True):
     # Open the image
+    if fda_applied:
+        brightness_min = 0.8
+        brightness_max = 0.9
+        desaturate_min = 0.9
+        desaturate_max = 0.95
+        blue_tint_min = 1.05
+        blue_tint_max = 1.15
+        contrast_min = 1.05
+        contrast_max = 1.1
+        gradient_min = 1.1
+        gradient_max = 1.3
+    else:
+        brightness_min = 0.7
+        brightness_max = 0.8
+        desaturate_min = 0.8
+        desaturate_max = 0.9
+        blue_tint_min = 1.15
+        blue_tint_max = 1.2
+        contrast_min = 1.1
+        contrast_max = 1.2
+        gradient_min = 1.2
+        gradient_max = 1.4
     image = Image.open(filename)
-    image = brightness(image, 0.8, 0.9)
-    image = desaturate(image, 0.9, 0.95)
-    image = blue_tint(image, 1.05, 1.15)
-    image = contrast(image, 1.05, 1.1)
-    image = generate_and_apply_gradient(image, 1.1, 1.3)
+    image = brightness(image, brightness_min, brightness_max)
+    image = desaturate(image, desaturate_min, desaturate_max)
+    image = blue_tint(image, blue_tint_min, blue_tint_max)
+    image = contrast(image, contrast_min, contrast_max)
+    image = generate_and_apply_gradient(image, gradient_min, gradient_max)
     image = dark_mask(image)
     image = add_gaussian_noise(image)
     return image
