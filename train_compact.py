@@ -17,7 +17,7 @@ if __name__ == "__main__":
     import augmentations
     from model import network
     from datasets.test_dataset import TestDataset
-    from datasets.train_dataset import TrainDataset
+    from datasets.train_dataset_compact import TrainDataset
     from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
     from torch.utils.data import DataLoader
     from itertools import chain
@@ -66,91 +66,53 @@ if __name__ == "__main__":
 
         
 
-#### Datasets
-# Each group is treated as a different dataset
-groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                    current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
+    #### Datasets
+    # Each group is treated as a different dataset
+    groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
+                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing) for n in range(args.groups_num)]
 
 
-# Each group has its own classifier, which depends on the number of classes in the group
-if args.loss == "cosface": 
-    classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
-elif args.loss == "sphereface":
-    classifiers = [sphereface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
-elif args.loss == "arcface":
-    classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
-else:
-    logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
-    exit
-classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
-
-logging.info(f"Using {len(groups)} groups")
-logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")
-logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")
-
-val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                    positive_dist_threshold=args.positive_dist_threshold)
-logging.info(f"Validation set: {val_ds}")
-logging.info(f"Test set: {test_ds}")
-
-#### Resume
-if args.resume_train:
-    model, model_optimizer, classifiers, classifiers_optimizers, best_val_recall1, start_epoch_num = \
-        util.resume_train(args, output_folder, model, model_optimizer, classifiers, classifiers_optimizers)
-    model = model.to(args.device)
-    epoch_num = start_epoch_num - 1
-    logging.info(f"Resuming from epoch {start_epoch_num} with best R@1 {best_val_recall1:.1f} from checkpoint {args.resume_train}")
-else:
-    best_val_recall1 = start_epoch_num = 0
-
-#### Train / evaluation loop
-logging.info("Start training ...")
-logging.info(f"There are {len(groups[0])} classes for the first group, " +
-            f"each epoch has {args.iterations_per_epoch} iterations " +
-            f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
-            f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
-
-
-if args.augmentation_device == "cuda":
-    apply_aug = True
-    if args.augmentation_type == "brightness":
-        augType = augmentations.DeviceAgosticAdjustBrightness(args.reduce_brightness)
-    elif args.augmentation_type == "contrast":
-        augType = augmentations.DeviceAgnosticContrast(args.increase_contrast)
-    elif args.augmentation_type == "saturation":
-        augType = augmentations.DeviceAgosticAdjustSaturation(args.decrease_saturation)
-    elif args.augmentation_type == "bcs":
-        augType = augmentations.DeviceAgosticAdjustBrightnessContrastSaturation(args.reduce_brightness,args.increase_contrast, args.decrease_saturation)
-    elif args.augmentation_type == "colorjitter":
-        augType = augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
-                                                    contrast=args.contrast,
-                                                    saturation=args.saturation,
-                                                    hue=args.hue)
-    elif args.augmentation_type == "none":
-        apply_aug = False
+    # Each group has its own classifier, which depends on the number of classes in the group
+    if args.loss == "cosface": 
+        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+    elif args.loss == "sphereface":
+        classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
+    elif args.loss == "arcface":
+        classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
     else:
-        logging.debug("No valid augmentation, please try again typing 'brightness', 'contrast', 'saturation', 'bcs', 'colorjitter' or 'none'")
+        logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
         exit
-    if apply_aug:
-        gpu_augmentation = T.Compose([
-            augType,
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                            scale=[1-args.random_resized_crop, 1]),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-    else:
-        gpu_augmentation = T.Compose([
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                        scale=[1-args.random_resized_crop, 1]),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+    classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
 
-    target_augmentation = T.Compose([
-        augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                        scale=[1-args.random_resized_crop, 1]),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    logging.info(f"Using {len(groups)} groups")
+    logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")
+    logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")
+
+    val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
+    test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+                        positive_dist_threshold=args.positive_dist_threshold)
+    logging.info(f"Validation set: {val_ds}")
+    logging.info(f"Test set: {test_ds}")
+
+    #### Resume
+    if args.resume_train:
+        model, model_optimizer, classifiers, classifiers_optimizers, best_val_recall1, start_epoch_num = \
+            util.resume_train(args, output_folder, model, model_optimizer, classifiers, classifiers_optimizers)
+        model = model.to(args.device)
+        epoch_num = start_epoch_num - 1
+        logging.info(f"Resuming from epoch {start_epoch_num} with best R@1 {best_val_recall1:.1f} from checkpoint {args.resume_train}")
+    else:
+        best_val_recall1 = start_epoch_num = 0
+
+    #### Train / evaluation loop
+    logging.info("Start training ...")
+    logging.info(f"There are {len(groups[0])} classes for the first group, " +
+                f"each epoch has {args.iterations_per_epoch} iterations " +
+                f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
+                f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
+
+
+    
 
 
     if args.use_amp16:
@@ -178,7 +140,7 @@ if args.augmentation_device == "cuda":
         model = model.train()
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
-        for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
+        for iteration in tqdm(range(1000), ncols=100):
             images, targets, _, _ = next(dataloader_iterator)
             
             images, targets = images.to(args.device), targets.to(args.device)
@@ -187,8 +149,7 @@ if args.augmentation_device == "cuda":
                 da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
-            if args.augmentation_device == "cuda":
-                images = gpu_augmentation(images)
+            
             
             model_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()

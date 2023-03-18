@@ -48,7 +48,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--device", type=str, default="cuda",
                         choices=["cuda", "cpu"], help="_")
     parser.add_argument("--seed", type=int, default=0, help="_")
-    parser.add_argument("--num_workers", type=int, default=8, help="_")
+    parser.add_argument("--num_workers", type=int, default=1, help="_")
     # Paths parameters
     parser.add_argument("--dataset_folder", type=str, default="small/",
                         help="path of the folder with train/val/test sets")

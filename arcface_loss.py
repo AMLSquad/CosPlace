@@ -2,6 +2,9 @@ import math
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 
 def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e-8) -> torch.Tensor:
@@ -12,42 +15,23 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
 
 
 class MarginCosineProduct(nn.Module):
-    """Implement of large margin cosine distance:
-    Args:
-        in_features: size of each input sample
-        out_features: size of each output sample
-        s: norm of input feature
-        m: margin
-    """
+   
     def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.s = s
         self.m = m
-        self.cos_m = math.cos(m)
-        self.sin_m = math.sin(m)
-        self.th = math.cos(math.pi - m)
-        self.mm = math.sin(math.pi - m) * m
         self.weight = Parameter(torch.Tensor(out_features, in_features))
-        nn.init.xavier_uniform_(self.weight)
+        nn.init.xavier_normal_(self.weight)
     
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-        #Cosine similarity between x and weights.
-        cosine = cosine_sim(inputs, self.weight)
-        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(0, 1))
-        phi = cosine * self.cos_m - sine * self.sin_m
-        #safe margin
-        phi = torch.where(cosine > self.th, phi, cosine - self.mm)
-
+        cosine = cosine_sim(inputs, self.weight).clamp(-1+1e-5, 1-1e-5)
+        cosine_plus_m = torch.clamp(torch.cos(torch.acos(cosine) + self.m),1e-5, 3.14159)
         one_hot = torch.zeros_like(cosine)
-        #label.view => vettore colonna. 
         one_hot.scatter_(1, label.view(-1, 1), 1.0)
-        my_cosine_vector = one_hot * phi + (1.0-one_hot) * cosine
-
+        my_cosine_vector = (one_hot * cosine_plus_m + (1.0-one_hot) * cosine)
         output = self.s * (my_cosine_vector)
-
-        #output sul quale verrà applicata la cross entropy loss.
         return output
     
     def __repr__(self):
@@ -56,3 +40,6 @@ class MarginCosineProduct(nn.Module):
                + ', out_features=' + str(self.out_features) \
                + ', s=' + str(self.s) \
                + ', m=' + str(self.m) + ')'
+
+
+

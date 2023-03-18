@@ -78,30 +78,31 @@ class GeoLocalizationNet(nn.Module):
             # perform adaptation round
             # logits output dim is num_domains
             return self.discriminator(features)
-
         return self.aggregation(features)
 
 
 def get_backbone(backbone_name):
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
-            backbone = torchvision.models.resnet18(pretrained=True)
+            backbone = torchvision.models.resnet18(pretrained=True,)
         elif backbone_name == "resnet50":
             backbone = torchvision.models.resnet50(pretrained=True)
         elif backbone_name == "resnet101":
             backbone = torchvision.models.resnet101(pretrained=True)
         elif backbone_name == "resnet152":
             backbone = torchvision.models.resnet152(pretrained=True)
-        
+        layers = []
         for name, child in backbone.named_children():
             if name == "layer3":  # Freeze layers before conv_3
                 break
+
             for params in child.parameters():
                 params.requires_grad = False
+            layers.append(child)
+        
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
         avg_layer = list(backbone.children())[-2:-1]
         layers = list(backbone.children())[:-2]  # Remove avg pooling and FC layer
-    
     elif backbone_name == "vgg16":
         backbone = torchvision.models.vgg16(pretrained=True)
         avg_layer = list(backbone.features.children())[-2:-1]
@@ -115,4 +116,4 @@ def get_backbone(backbone_name):
     
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]
     
-    return backbone, features_dim, avg_layer
+    return backbone, features_dim, 0
