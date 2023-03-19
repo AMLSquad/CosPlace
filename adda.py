@@ -9,17 +9,11 @@ from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 
+from model.network import GeoLocalizationNet
 from adda_utils import loop_iterable, set_requires_grad
+from datasets.train_dataset import TrainDataset
+from datasets.target_dataset import TargetDataset
 
-
-import sys
-# caution: path[0] is reserved for script path (or '' in REPL)
-sys.path.append('../model')
-from network import GeoLocalizationNet
-
-sys.path.append('../datasets')
-from train_dataset import TrainDataset
-from target_dataset import TargetDataset
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
