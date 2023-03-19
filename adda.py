@@ -141,7 +141,7 @@ def main(args):
         clf.backbone = target_model
         if not os.path.exists("adda_target_model"):
             os.makedirs("adda_target_model")
-        torch.save(clf.state_dict(), 'adda_target_model/adda.pt')
+        torch.save(clf.state_dict(), 'adda_target_model/adda.pt' + str(epoch))
 
 
 if __name__ == '__main__':
