@@ -67,6 +67,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--reduce_brightness", type=float, default=0.65)
     parser.add_argument("--increase_contrast", type=float, default=1.15)
     parser.add_argument("--decrease_saturation", type=float, default=0.85)
+    parser.add_argument("--adda_path", type=str, default=None)
 
     parser.add_argument("--base_preprocessing", type=bool, default=False)
     args = parser.parse_args()

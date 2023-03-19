@@ -139,7 +139,9 @@ def main(args):
 
         # Create the full target model and save it
         clf.backbone = target_model
-        torch.save(clf.state_dict(), 'trained_models/adda.pt')
+        if not os.path.exists("adda_target_model"):
+            os.makedirs("adda_target_model")
+        torch.save(clf.state_dict(), 'adda_target_model/adda.pt')
 
 
 if __name__ == '__main__':

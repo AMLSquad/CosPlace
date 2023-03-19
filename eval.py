@@ -39,6 +39,10 @@ if args.resume_model is not None:
         del model_state_dict["discriminator.5.weight"]
         del model_state_dict["discriminator.5.bias"]
     model.load_state_dict(model_state_dict)
+if args.adda_path is not None:
+    logging.info(f"Loading backbone ADDA")
+    model_state_dict = torch.load(args.adda_path)
+    model.backbone.load_state_dict(model_state_dict)
 else:
     logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +
                 "Evaluation will be computed using randomly initialized weights.")
