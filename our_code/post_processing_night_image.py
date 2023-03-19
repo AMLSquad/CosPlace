@@ -130,10 +130,9 @@ if __name__ == "__main__":
     images_paths = sorted(glob(f"{directory}/**/*.jpg", recursive=True))
     for filename in tqdm(images_paths):
         internal_dir, image_name = filename.split("/")[-2], filename.split("/")[-1]
-        if random.random() < 0.5:
-            night_image = apply_post_processing(filename, False)
-        else:
-            night_image = Image.open(filename)
+
+        night_image = apply_post_processing(filename, False)
+        
         if not os.path.isdir(os.path.join(output_directory, internal_dir)):
             os.makedirs(os.path.join(output_directory, internal_dir))
         night_image.save(os.path.join(output_directory,internal_dir, image_name))
