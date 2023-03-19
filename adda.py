@@ -63,14 +63,14 @@ def main(args):
         nn.Linear(20, 1)
     ).to(device)
 
-    source_batch_size = (batch_size * 2) // 3
-    target_batch_size = batch_size - source_batch_size
+    source_batch = (batch_size*2) // 3
+    target_batch = batch_size - source_batch
 
-    source_loader = DataLoader(source_dataset, batch_size=source_batch_size,
+    source_loader = DataLoader(source_dataset, batch_size=source_batch,
                                shuffle=True, num_workers=1, pin_memory=True)
     
     
-    target_loader = DataLoader(target_dataset, batch_size=target_batch_size,
+    target_loader = DataLoader(target_dataset, batch_size=target_batch,
                                shuffle=True, num_workers=1, pin_memory=True)
 
     discriminator_optim = torch.optim.Adam(discriminator.parameters())
@@ -98,9 +98,10 @@ def main(args):
 
                 
                 discriminator_x = torch.cat([source_features, target_features])
+                
                 discriminator_y = torch.cat([torch.ones(source_x.shape[0], device=device),
                                              torch.zeros(target_x.shape[0], device=device)])
-                
+
                 preds = discriminator(discriminator_x).squeeze()
                 loss = criterion(preds, discriminator_y)
 
@@ -117,7 +118,9 @@ def main(args):
             for _ in range(args.k_clf):
                 _, (target_x, _) = next(batch_iterator)
                 target_x = target_x.to(device)
+                target_features = target_model(target_x)
                 target_features = torch.nn.functional.adaptive_avg_pool2d(target_features, (1,1)).view(target_x.shape[0], -1)
+
 
                 # flipped labels
                 discriminator_y = torch.ones(target_x.shape[0], device=device)
