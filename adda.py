@@ -13,7 +13,7 @@ from model.network import GeoLocalizationNet
 from adda_utils import loop_iterable, set_requires_grad
 from datasets.train_dataset import TrainDataset
 from datasets.target_dataset import TargetDataset
-
+import os
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -35,7 +35,8 @@ def main(args):
     source_model.load_state_dict(torch.load(args.model_file))
 
     ds_args = DatasetArgs(args.source_dataset_path)
-    source_dataset = TrainDataset(ds_args, args.source_dataset_path)
+    train_folder = os.path.join(args.source_dataset_path, "train")
+    source_dataset = TrainDataset(ds_args, train_folder)
 
     
     target_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
