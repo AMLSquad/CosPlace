@@ -8,18 +8,37 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
-
+from CosPlace.model.network import GeoLocalizationNet
 from utils import loop_iterable, set_requires_grad
+from CosPlace.datasets.train_dataset import TrainDataset
+from CosPlace.datasets.target_dataset import TargetDataset
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+class DatasetArgs:
+    def __init__(self, dataset_folder, pseudo_target_folder = None):
+        self.augmentation_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.dataset_folder = dataset_folder
+        self.pseudo_target_folder = pseudo_target_folder
+        self.brightness = 0.7
+        self.contrast = 0.7
+        self.saturation = 0.7
+        self.hue = 0.5
+
 
 def main(args):
-    source_model = args.source_model
-    target_model = args.target_model
-    source_dataset = args.source_dataset
-    target_dataset = args.target_dataset
+
+    source_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
+    source_model.load_state_dict(torch.load(args.model_file))
+
+    ds_args = DatasetArgs(args.source_dataset_path)
+    source_dataset = TrainDataset(ds_args, args.source_dataset_path)
+
+    
+    target_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
+    target_dataset = TargetDataset(args.target_dataset_path)
+
     batch_size = args.batch_size
     features_dim = args.features_dim
 
@@ -114,12 +133,13 @@ def main(args):
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='Domain adaptation using ADDA')
-    arg_parser.add_argument('--source-model')
-    arg_parser.add_argument('--target-model')
-    arg_parser.add_argument('--source-dataset')
-    arg_parser.add_argument('--target-dataset')
+    arg_parser.add_argument('--backbone-name', default='resnet18')
+    arg_parser.add_argument('--fc-output-dim', type=int, default=512)
+    arg_parser.add_argument('--model_file')
+    arg_parser.add_argument('--source-dataset_path')
+    arg_parser.add_argument('--target-dataset_path')
     arg_parser.add_argument('--features-dim', type=int, default=512)
-    arg_parser.add_argument('--batch-size', type=int, default=64)
+    arg_parser.add_argument('--batch-size', type=int, default=32)
     arg_parser.add_argument('--iterations', type=int, default=500)
     arg_parser.add_argument('--epochs', type=int, default=5)
     arg_parser.add_argument('--k-disc', type=int, default=1)
