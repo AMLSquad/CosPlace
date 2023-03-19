@@ -9,7 +9,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 from CosPlace.model.network import GeoLocalizationNet
-from utils import loop_iterable, set_requires_grad
+from CosPlace.ADDA.adda_utils import loop_iterable, set_requires_grad
 from CosPlace.datasets.train_dataset import TrainDataset
 from CosPlace.datasets.target_dataset import TargetDataset
 
