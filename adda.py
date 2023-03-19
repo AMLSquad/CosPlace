@@ -33,7 +33,7 @@ def main(args):
 
     source_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
     source_model.load_state_dict(torch.load(args.model_file))
-
+   
     ds_args = DatasetArgs(args.source_dataset_path)
     train_folder = os.path.join(args.source_dataset_path, "train")
     source_dataset = TrainDataset(ds_args, train_folder)
@@ -63,13 +63,14 @@ def main(args):
         nn.Linear(20, 1)
     ).to(device)
 
-    half_batch = batch_size // 2
+    source_batch_size = (batch_size * 2) // 3
+    target_batch_size = batch_size - source_batch_size
 
-    source_loader = DataLoader(source_dataset, batch_size=half_batch,
+    source_loader = DataLoader(source_dataset, batch_size=source_batch_size,
                                shuffle=True, num_workers=1, pin_memory=True)
     
     
-    target_loader = DataLoader(target_dataset, batch_size=half_batch,
+    target_loader = DataLoader(target_dataset, batch_size=target_batch_size,
                                shuffle=True, num_workers=1, pin_memory=True)
 
     discriminator_optim = torch.optim.Adam(discriminator.parameters())
@@ -86,16 +87,20 @@ def main(args):
             set_requires_grad(target_model, requires_grad=False)
             set_requires_grad(discriminator, requires_grad=True)
             for _ in range(args.k_disc):
-                (source_x, _), (target_x, _) = next(batch_iterator)
-                source_x, target_x = source_x.to(device), target_x.to(device)
+                (source_x), (target_x) = next(batch_iterator)
+                
+                source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
-                source_features = source_model(source_x).view(source_x.shape[0], -1)
-                target_features = target_model(target_x).view(target_x.shape[0], -1)
+                source_features = source_model(source_x)
+                source_features = torch.nn.functional.adaptive_avg_pool2d(source_features, (1,1)).view(source_x.shape[0], -1)
+                target_features = target_model(target_x)
+                target_features = torch.nn.functional.adaptive_avg_pool2d(target_features, (1,1)).view(target_x.shape[0], -1)
 
+                
                 discriminator_x = torch.cat([source_features, target_features])
                 discriminator_y = torch.cat([torch.ones(source_x.shape[0], device=device),
                                              torch.zeros(target_x.shape[0], device=device)])
-
+                
                 preds = discriminator(discriminator_x).squeeze()
                 loss = criterion(preds, discriminator_y)
 
@@ -112,7 +117,7 @@ def main(args):
             for _ in range(args.k_clf):
                 _, (target_x, _) = next(batch_iterator)
                 target_x = target_x.to(device)
-                target_features = target_model(target_x).view(target_x.shape[0], -1)
+                target_features = torch.nn.functional.adaptive_avg_pool2d(target_features, (1,1)).view(target_x.shape[0], -1)
 
                 # flipped labels
                 discriminator_y = torch.ones(target_x.shape[0], device=device)
