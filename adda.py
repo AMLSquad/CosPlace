@@ -63,15 +63,15 @@ def main(args):
         nn.Linear(20, 1)
     ).to(device)
 
-    source_batch = (batch_size*2) // 3
+    source_batch = (batch_size ) // 2
     target_batch = batch_size - source_batch
 
     source_loader = DataLoader(source_dataset, batch_size=source_batch,
-                               shuffle=True, num_workers=1, pin_memory=True)
+                               shuffle=True, num_workers=8, pin_memory=True)
     
     
     target_loader = DataLoader(target_dataset, batch_size=target_batch,
-                               shuffle=True, num_workers=1, pin_memory=True)
+                               shuffle=True, num_workers=8, pin_memory=True)
 
     discriminator_optim = torch.optim.Adam(discriminator.parameters())
     target_optim = torch.optim.Adam(target_model.parameters())
