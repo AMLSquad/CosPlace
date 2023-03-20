@@ -39,7 +39,7 @@ class avg2d(nn.Module):
 
 def main(args):
 
-    avg2d = avg2d().to(device)
+    a = avg2d().to(device)
 
     source_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
     source_model.load_state_dict(torch.load(args.model_file))
@@ -102,9 +102,9 @@ def main(args):
                 source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
                 source_features = source_model(source_x)
-                source_features = avg2d(source_features, source_x)
+                source_features = a(source_features, source_x)
                 target_features = target_model(target_x)
-                target_features = avg2d(target_features, target_x)
+                target_features = a(target_features, target_x)
 
                 
                 discriminator_x = torch.cat([source_features, target_features])
@@ -129,7 +129,7 @@ def main(args):
                 _, (target_x, _) = next(batch_iterator)
                 target_x = target_x.to(device)
                 target_features = target_model(target_x)
-                target_features = avg2d(target_features, target_x)
+                target_features = a(target_features, target_x)
 
 
                 # flipped labels
