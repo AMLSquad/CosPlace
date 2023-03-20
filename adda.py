@@ -50,6 +50,7 @@ def main(args):
 
     
     target_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
+    target_model.load_state_dict(torch.load(args.model_file))
     target_dataset = TargetDataset(args.target_dataset_path)
 
     batch_size = args.batch_size
