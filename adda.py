@@ -50,7 +50,7 @@ def main(args):
 
     
     target_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
-    #target_model.load_state_dict(torch.load(args.model_file))
+    target_model.load_state_dict(torch.load(args.model_file))
     target_dataset = TargetDataset(args.target_dataset_path)
 
     batch_size = args.batch_size
@@ -78,11 +78,11 @@ def main(args):
     target_batch = batch_size - source_batch
 
     source_loader = DataLoader(source_dataset, batch_size=source_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
+                               shuffle=True, num_workers=2, pin_memory=True)
     
     
     target_loader = DataLoader(target_dataset, batch_size=target_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
+                               shuffle=True, num_workers=2, pin_memory=True)
 
     discriminator_optim = torch.optim.Adam(discriminator.parameters())
     target_optim = torch.optim.Adam(target_model.parameters())
