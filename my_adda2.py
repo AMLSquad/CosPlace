@@ -71,22 +71,22 @@ def main(args):
         nn.ReLU(),
         nn.Linear(50, 20),
         nn.ReLU(),
-        nn.Linear(20, 1)
+        nn.Linear(20, 2)
     ).to(device)
 
     source_batch = (batch_size ) // 2
     target_batch = batch_size - source_batch
 
     source_loader = DataLoader(source_dataset, batch_size=source_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
+                               shuffle=True, num_workers=2, pin_memory=True)
     
     
     target_loader = DataLoader(target_dataset, batch_size=target_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
+                               shuffle=True, num_workers=2, pin_memory=True)
 
     discriminator_optim = torch.optim.Adam(discriminator.parameters())
     target_optim = torch.optim.Adam(target_model.parameters())
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
 
     for epoch in range(1, args.epochs+1):
         batch_iterator = zip(loop_iterable(source_loader), loop_iterable(target_loader))
@@ -113,7 +113,8 @@ def main(args):
                 discriminator_y = torch.cat([torch.ones(source_x.shape[0], device=device),
                                              torch.zeros(target_x.shape[0], device=device)])
 
-                preds = discriminator(discriminator_x).squeeze()
+                preds = discriminator(discriminator_x)
+                predictions = torch.argmax(preds, dim=1)
                 loss = criterion(preds, discriminator_y)
 
                 discriminator_optim.zero_grad()
@@ -135,13 +136,13 @@ def main(args):
 
 
                 # flipped labels
-                discriminator_y = torch.ones(target_x.shape[0], device=device)
+                discriminator_y = torch.ones(target_x.shape[0], device=device).long()
 
                 preds = discriminator(target_features).squeeze()
-                loss = criterion(preds, discriminator_y)
+                loss_tgt = criterion(preds, discriminator_y)
 
                 target_optim.zero_grad()
-                loss.backward()
+                loss_tgt.backward()
                 target_optim.step()
 
         mean_loss = total_loss / (args.iterations*args.k_disc)

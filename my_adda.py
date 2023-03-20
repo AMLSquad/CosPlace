@@ -15,6 +15,8 @@ from datasets.train_dataset import TrainDataset
 from datasets.target_dataset import TargetDataset
 import os
 from itertools import cycle
+from tqdm import tqdm, trange
+
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -64,7 +66,7 @@ def main(args):
     source_model = source_model.backbone
 
     target_model = target_model.to(device)
-    target_model.load_state_dict(torch.load(args.model_file))
+    #target_model.load_state_dict(torch.load(args.model_file))
     target_model = target_model.backbone
 
     discriminator = nn.Sequential(
@@ -78,16 +80,18 @@ def main(args):
     source_batch = (batch_size ) // 2
     target_batch = batch_size - source_batch
 
-    source_loader = DataLoader(source_dataset, batch_size=source_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
+    source_loader = enumerate(DataLoader(source_dataset, batch_size=source_batch,
+                               shuffle=True, num_workers=2, pin_memory=True))
     
     
-    target_loader = DataLoader(target_dataset, batch_size=target_batch,
-                               shuffle=True, num_workers=8, pin_memory=True)
 
-    discriminator_optim = torch.optim.Adam(discriminator.parameters(), lr=5e-3)
-    target_optim = torch.optim.Adam(target_model.parameters(), lr=5e-3)
+    target_loader = DataLoader(target_dataset, batch_size=target_batch,
+                               shuffle=True, num_workers=2, pin_memory=True)
+    
+    discriminator_optim = torch.optim.Adam(discriminator.parameters(), lr=0.005)
+    target_optim = torch.optim.Adam(target_model.parameters(), lr=0.05)
     criterion = nn.CrossEntropyLoss()
+    progress_bar = tqdm(range(args.epochs * len(target_loader)))
 
     for epoch in range(1, args.epochs+1):
         
@@ -98,10 +102,13 @@ def main(args):
             # Train discriminator
             #set_requires_grad(target_model, requires_grad=False)
             #set_requires_grad(discriminator, requires_grad=True)
-            source_x = next(source_loader)
+   
+            source_x = next(iter(source_loader))[1]
+            
             target_x = batch
                 
             source_x, target_x = source_x[0].to(device), target_x[0].to(device)
+            
 
             source_features = source_model(source_x)
             source_features = a(source_features, source_x)
@@ -114,16 +121,18 @@ def main(args):
             label_tgt = torch.zeros(target_x.size(0)).long().to(device)
             discriminator_y = torch.cat((label_src, label_tgt), 0)
             
-
+            
             preds = discriminator(discriminator_x)
+            
             loss = criterion(preds, discriminator_y)
-
             discriminator_optim.zero_grad()
             loss.backward()
             discriminator_optim.step()
+            predictions = torch.argmax(preds, dim=1)
+
 
             total_loss += loss.item()
-            total_accuracy += ((preds > 0).long() == discriminator_y.long()).float().mean().item()
+            total_accuracy += (predictions.long() == discriminator_y.long()).float().mean().item()
 
             # Train classifier
             #set_requires_grad(target_model, requires_grad=True)
@@ -136,7 +145,7 @@ def main(args):
 
 
             # flipped labels
-            discriminator_y = torch.ones(target_x.shape[0], device=device)
+            discriminator_y = torch.ones(target_x.shape[0], device=device).long()
 
             preds = discriminator(target_features)
             loss_tgt = criterion(preds, discriminator_y)
@@ -144,9 +153,10 @@ def main(args):
             target_optim.zero_grad()
             loss_tgt.backward()
             target_optim.step()
+            progress_bar.update(1)
 
-        mean_loss = total_loss / (args.iterations*args.k_disc)
-        mean_accuracy = total_accuracy / (args.iterations*args.k_disc)
+        mean_loss = total_loss / len(target_loader)
+        mean_accuracy = total_accuracy / len(target_loader)
         tqdm.write(f'EPOCH {epoch:03d}: discriminator_loss={mean_loss:.4f}, '
                    f'discriminator_accuracy={mean_accuracy:.4f}')
 
