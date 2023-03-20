@@ -14,6 +14,7 @@ from adda_utils import loop_iterable, set_requires_grad
 from datasets.train_dataset import TrainDataset
 from datasets.target_dataset import TargetDataset
 import os
+from itertools import cycle
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -89,14 +90,16 @@ def main(args):
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(1, args.epochs+1):
-        batch_iterator = enumerate(zip(source_loader, target_loader))
+        
 
         total_loss = 0
         total_accuracy = 0
-        for (source_x, _), (target_x, _) in batch_iterator:
+        for batch in target_loader:
             # Train discriminator
             #set_requires_grad(target_model, requires_grad=False)
             #set_requires_grad(discriminator, requires_grad=True)
+            source_x = next(source_loader)
+            target_x = batch
                 
             source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
@@ -136,10 +139,10 @@ def main(args):
             discriminator_y = torch.ones(target_x.shape[0], device=device)
 
             preds = discriminator(target_features)
-            loss = criterion(preds, discriminator_y)
+            loss_tgt = criterion(preds, discriminator_y)
 
             target_optim.zero_grad()
-            loss.backward()
+            loss_tgt.backward()
             target_optim.step()
 
         mean_loss = total_loss / (args.iterations*args.k_disc)
