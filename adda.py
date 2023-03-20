@@ -28,8 +28,18 @@ class DatasetArgs:
         self.saturation = 0.7
         self.hue = 0.5
 
+class avg2d(nn.Module):
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, x, source):
+        x = torch.nn.functional.adaptive_avg_pool2d(x, (1,1))
+        x = x.view(source.shape[0], -1)
+        return x
 
 def main(args):
+
+    avg2d = avg2d().to(device)
 
     source_model = GeoLocalizationNet(args.backbone_name, args.fc_output_dim).to(device)
     source_model.load_state_dict(torch.load(args.model_file))
@@ -92,9 +102,9 @@ def main(args):
                 source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
                 source_features = source_model(source_x)
-                source_features = torch.nn.functional.adaptive_avg_pool2d(source_features, (1,1)).view(source_x.shape[0], -1)
+                source_features = avg2d(source_features, source_x)
                 target_features = target_model(target_x)
-                target_features = torch.nn.functional.adaptive_avg_pool2d(target_features, (1,1)).view(target_x.shape[0], -1)
+                target_features = avg2d(target_features, target_x)
 
                 
                 discriminator_x = torch.cat([source_features, target_features])
@@ -119,7 +129,7 @@ def main(args):
                 _, (target_x, _) = next(batch_iterator)
                 target_x = target_x.to(device)
                 target_features = target_model(target_x)
-                target_features = torch.nn.functional.adaptive_avg_pool2d(target_features, (1,1)).view(target_x.shape[0], -1)
+                target_features = avg2d(target_features, target_x)
 
 
                 # flipped labels
