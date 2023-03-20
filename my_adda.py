@@ -63,6 +63,7 @@ def main(args):
     source_model = source_model.backbone
 
     target_model = target_model.to(device)
+    target_model.load_state_dict(torch.load(args.model_file))
     target_model = target_model.backbone
 
     discriminator = nn.Sequential(
