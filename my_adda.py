@@ -84,68 +84,63 @@ def main(args):
     target_loader = DataLoader(target_dataset, batch_size=target_batch,
                                shuffle=True, num_workers=8, pin_memory=True)
 
-    discriminator_optim = torch.optim.Adam(discriminator.parameters())
-    target_optim = torch.optim.Adam(target_model.parameters())
+    discriminator_optim = torch.optim.Adam(discriminator.parameters(), lr=5e-3)
+    target_optim = torch.optim.Adam(target_model.parameters(), lr=5e-3)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(1, args.epochs+1):
-        batch_iterator = zip(loop_iterable(source_loader), loop_iterable(target_loader))
+        batch_iterator = enumerate(zip(source_loader, target_loader))
 
         total_loss = 0
         total_accuracy = 0
-        for _ in trange(args.iterations, leave=False):
+        for (source_x, _), (target_x, _) in batch_iterator:
             # Train discriminator
-            set_requires_grad(target_model, requires_grad=False)
-            set_requires_grad(discriminator, requires_grad=True)
-            for _ in range(args.k_disc):
-                (source_x), (target_x) = next(batch_iterator)
+            #set_requires_grad(target_model, requires_grad=False)
+            #set_requires_grad(discriminator, requires_grad=True)
                 
-                source_x, target_x = source_x[0].to(device), target_x[0].to(device)
+            source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
-                source_features = source_model(source_x)
-                source_features = a(source_features, source_x)
-                target_features = target_model(target_x)
-                target_features = a(target_features, target_x)
+            source_features = source_model(source_x)
+            source_features = a(source_features, source_x)
+            target_features = target_model(target_x)
+            target_features = a(target_features, target_x)
 
+            discriminator_x = torch.cat([source_features, target_features])
 
+            label_src = torch.ones(source_x.size(0)).long().to(device)
+            label_tgt = torch.zeros(target_x.size(0)).long().to(device)
+            discriminator_y = torch.cat((label_src, label_tgt), 0)
+            
 
-                
-                discriminator_x = torch.cat([source_features, target_features])
+            preds = discriminator(discriminator_x)
+            loss = criterion(preds, discriminator_y)
 
-                label_src = torch.ones(source_x.size(0)).long().to(device)
-                label_tgt = torch.zeros(target_x.size(0)).long().to(device)
-                discriminator_y = torch.cat((label_src, label_tgt), 0)
-                
+            discriminator_optim.zero_grad()
+            loss.backward()
+            discriminator_optim.step()
 
-                preds = discriminator(discriminator_x)
-                loss = criterion(preds, discriminator_y)
-
-                discriminator_optim.zero_grad()
-                loss.backward()
-                discriminator_optim.step()
-
-                total_loss += loss.item()
-                total_accuracy += ((preds > 0).long() == discriminator_y.long()).float().mean().item()
+            total_loss += loss.item()
+            total_accuracy += ((preds > 0).long() == discriminator_y.long()).float().mean().item()
 
             # Train classifier
-            set_requires_grad(target_model, requires_grad=True)
-            set_requires_grad(discriminator, requires_grad=False)
-            for _ in range(args.k_clf):
-                _, (target_x, _) = next(batch_iterator)
-                target_x = target_x.to(device)
-                target_features = target_model(target_x)
-                target_features = a(target_features, target_x)
+            #set_requires_grad(target_model, requires_grad=True)
+            #set_requires_grad(discriminator, requires_grad=False)
+
+            discriminator_optim.zero_grad()
+            
+            target_features = target_model(target_x)
+            target_features = a(target_features, target_x)
 
 
-                # flipped labels
-                discriminator_y = torch.ones(target_x.shape[0], device=device)
+            # flipped labels
+            discriminator_y = torch.ones(target_x.shape[0], device=device)
 
-                preds = discriminator(target_features)
-                loss = criterion(preds, discriminator_y)
+            preds = discriminator(target_features)
+            loss = criterion(preds, discriminator_y)
 
-                target_optim.zero_grad()
-                loss.backward()
-                target_optim.step()
+            target_optim.zero_grad()
+            loss.backward()
+            target_optim.step()
 
         mean_loss = total_loss / (args.iterations*args.k_disc)
         mean_accuracy = total_accuracy / (args.iterations*args.k_disc)
