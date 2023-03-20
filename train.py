@@ -76,7 +76,7 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
 if args.loss == "cosface": 
     classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "sphereface":
-    classifiers = [sphereface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+    classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "arcface":
     classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 else:
