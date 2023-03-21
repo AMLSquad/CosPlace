@@ -109,10 +109,7 @@ def main(args):
                 source_x, target_x = source_x[0].to(device), target_x[0].to(device)
 
                 source_features = source_model(source_x)
-                source_features = a(source_features, source_x)
                 target_features = target_model(target_x)
-                target_features = a(target_features, target_x)
-
                 
                 discriminator_x = torch.cat([source_features, target_features])
                 
@@ -136,8 +133,6 @@ def main(args):
                 _, (target_x, _) = next(batch_iterator)
                 target_x = target_x.to(device)
                 target_features = target_model(target_x)
-                target_features = a(target_features, target_x)
-
 
                 # flipped labels
                 discriminator_y = torch.ones(target_x.shape[0], device=device)
