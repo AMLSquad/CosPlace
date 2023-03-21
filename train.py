@@ -21,6 +21,7 @@ from datasets.train_dataset import TrainDataset
 from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
 from torch.utils.data import DataLoader
 from itertools import chain
+from focal_loss import FocalLoss
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -50,7 +51,10 @@ if args.resume_model is not None:
 # set model to train mode
 model = model.to(args.device).train()
 #### Optimizer
-criterion = torch.nn.CrossEntropyLoss()
+if args.focal_loss:
+    criterion = FocalLoss(gamma=2, reduction='mean')
+else:
+    criterion = torch.nn.CrossEntropyLoss()
 # Remove the domain classifier parameters from the model parameters
 
 
