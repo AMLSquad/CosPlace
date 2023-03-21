@@ -21,15 +21,8 @@ if __name__ == "__main__":
     from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
     from torch.utils.data import DataLoader
     from itertools import chain
-
     torch.backends.cudnn.benchmark = True  # Provides a speedup
-
-
-
-
-
     args = parser.parse_arguments()
-    
     start_time = datetime.now()
     output_folder = f"logs/{args.save_dir}/{args.experiment_name}_{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
     commons.make_deterministic(args.seed)
