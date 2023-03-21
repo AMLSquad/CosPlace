@@ -14,6 +14,7 @@ import commons
 import sphereface_loss
 import cosface_loss
 import arcface_loss
+import test_new_loss
 import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
@@ -51,9 +52,9 @@ if args.resume_model is not None:
 # set model to train mode
 model = model.to(args.device).train()
 #### Optimizer
-if args.focal_loss:
-    logging.debug("Using focal loss")
-    criterion = FocalLoss(gamma=2, reduction='mean')
+if args.loss == "new_loss":
+    logging.debug("Using new loss")
+    criterion = test_new_loss.NewLoss()
 else:
     criterion = torch.nn.CrossEntropyLoss()
 # Remove the domain classifier parameters from the model parameters
@@ -83,6 +84,8 @@ elif args.loss == "sphereface":
     classifiers = [sphereface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "arcface":
     classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+elif args.loss == "new_loss":
+    classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 else:
     logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
     exit
@@ -201,9 +204,12 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             #Get descriptors from the model (ends with fc and normalization)
             descriptors = model(images)
             #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
-            output = classifiers[current_group_num](descriptors, targets)
+            output  = classifiers[current_group_num](descriptors, targets)
             #Applies the softmax loss
-            loss = criterion(output, targets)
+            if args.loss == "new_loss":
+                loss = criterion(output[0], output[1], targets)
+            else:
+                loss = criterion(output, targets)
             loss.backward()
             #append the loss to the epoch losses
 
