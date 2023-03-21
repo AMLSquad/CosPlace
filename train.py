@@ -52,6 +52,7 @@ if args.resume_model is not None:
 model = model.to(args.device).train()
 #### Optimizer
 if args.focal_loss:
+    logging.debug("Using focal loss")
     criterion = FocalLoss(gamma=2, reduction='mean')
 else:
     criterion = torch.nn.CrossEntropyLoss()
