@@ -119,10 +119,9 @@ def main(args):
                 discriminator_optim.zero_grad()
                 loss.backward()
                 discriminator_optim.step()
-                predictions = torch.argmax(preds, dim=1)
 
                 total_loss += loss.item()
-                total_accuracy += (predictions.long() == discriminator_y.long()).float().mean().item()
+                total_accuracy += ((preds > 0).long() == discriminator_y.long()).float().mean().item()
 
             # Train classifier
             set_requires_grad(target_model, requires_grad=True)
