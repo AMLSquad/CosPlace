@@ -150,8 +150,8 @@ def main(args):
                    f'discriminator_accuracy={mean_accuracy:.4f}')
 
         # Create the full target model and save it
-        clf.backbone = target_model.backbone
-        clf.aggregation = target_model.aggregation
+        clf.backbone = target_model[0]
+        clf.aggregation = target_model[1]
         if not os.path.exists("adda_target_model"):
             os.makedirs("adda_target_model")
         torch.save(clf.state_dict(), 'adda_target_model/adda.pt' + str(epoch))
