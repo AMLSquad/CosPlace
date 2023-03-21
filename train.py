@@ -52,11 +52,8 @@ if args.resume_model is not None:
 # set model to train mode
 model = model.to(args.device).train()
 #### Optimizer
-if args.loss == "new_loss":
-    logging.debug("Using new loss")
-    criterion = test_new_loss.NewLoss()
-else:
-    criterion = torch.nn.CrossEntropyLoss()
+
+criterion = torch.nn.CrossEntropyLoss()
 # Remove the domain classifier parameters from the model parameters
 
 
@@ -206,10 +203,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
             output  = classifiers[current_group_num](descriptors, targets)
             #Applies the softmax loss
-            if args.loss == "new_loss":
-                loss = criterion(output[0], output[1], targets)
-            else:
-                loss = criterion(output, targets)
+            loss = criterion(output)
             loss.backward()
             #append the loss to the epoch losses
 
