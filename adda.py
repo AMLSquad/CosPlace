@@ -56,15 +56,21 @@ def main(args):
     batch_size = args.batch_size
     features_dim = args.features_dim
 
-    source_model = source_model.to(device)
+    source_model.to(device)
     source_model.eval()
     set_requires_grad(source_model, requires_grad=False)
     
     clf = source_model
-    source_model = source_model.backbone
+    source_model = nn.Sequential(
+        source_model.backbone,
+        source_model.aggregation
+    )
 
-    target_model = target_model.to(device)
-    target_model = target_model.backbone
+    target_model.to(device)
+    target_model = nn.Sequential(
+        target_model.backbone,
+        target_model.aggregation
+    )
 
     discriminator = nn.Sequential(
         nn.Linear(features_dim, 50),
@@ -149,7 +155,8 @@ def main(args):
                    f'discriminator_accuracy={mean_accuracy:.4f}')
 
         # Create the full target model and save it
-        clf.backbone = target_model
+        clf.backbone = target_model.backbone
+        clf.aggregation = target_model.aggregation
         if not os.path.exists("adda_target_model"):
             os.makedirs("adda_target_model")
         torch.save(clf.state_dict(), 'adda_target_model/adda.pt' + str(epoch))
