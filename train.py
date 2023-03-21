@@ -52,8 +52,11 @@ if args.resume_model is not None:
 # set model to train mode
 model = model.to(args.device).train()
 #### Optimizer
-
-criterion = torch.nn.CrossEntropyLoss()
+if args.loss == "new_loss":
+    logging.debug("Using new loss")
+    criterion = torch.nn.NLLLoss()
+else:
+    criterion = torch.nn.CrossEntropyLoss()
 # Remove the domain classifier parameters from the model parameters
 
 
