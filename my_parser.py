@@ -97,7 +97,7 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.test_set_folder):
         raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
 
-    if args.loss not in ["cosface", "arcface", "sphereface"]:
+    if args.loss not in ["cosface", "arcface", "sphereface", "new_loss"]:
         raise Exception("No valid loss for --loss arg, please try again typing 'cosface', 'sphereface' or 'arcface'")
 
 
