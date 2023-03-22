@@ -23,6 +23,8 @@ from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
 from torch.utils.data import DataLoader
 from itertools import chain
 from focal_loss import FocalLoss
+from test_new_loss import NewLoss
+from torch import Tensor
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -54,7 +56,7 @@ model = model.to(args.device).train()
 #### Optimizer
 if args.loss == "new_loss":
     logging.debug("Using new loss")
-    criterion = torch.nn.NLLLoss()
+    criterion = NewLoss()
 else:
     criterion = torch.nn.CrossEntropyLoss()
 # Remove the domain classifier parameters from the model parameters
@@ -208,7 +210,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             print(output.shape)
             print(targets.shape)
             #Applies the softmax loss
-            loss = criterion(output, targets)
+            if (args.loss == "new_loss"):
+                loss = criterion(output)
+            else:
+                loss = criterion(output, targets)
             loss.backward()
             #append the loss to the epoch losses
 
