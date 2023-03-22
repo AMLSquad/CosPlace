@@ -43,8 +43,6 @@ class MarginCosineProduct(nn.Module):
         #Mette m solo dove c'è yi. Il resto rimane senza m. 
         one_hot.scatter_(1, label.view(-1, 1), 1.0)
         output = self.s * (cosine - one_hot * self.m)
-        print(label.shape)
-        print(label)
         output = F.cross_entropy(output, label, reduction='none')
         #output sul quale verrà applicata la cross entropy loss.
         SM = self.l * torch.mm(inputs, self.weight.t())

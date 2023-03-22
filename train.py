@@ -205,6 +205,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
             descriptors = model(images)
             #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
             output  = classifiers[current_group_num](descriptors, targets)
+            print(output.shape)
+            print(targets.shape)
             #Applies the softmax loss
             loss = criterion(output, targets)
             loss.backward()
