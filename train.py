@@ -87,7 +87,7 @@ elif args.loss == "sphereface":
 elif args.loss == "arcface":
     classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "new_loss":
-    classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+    classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group), l = args.l_loss) for group in groups]
 else:
     logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
     exit
