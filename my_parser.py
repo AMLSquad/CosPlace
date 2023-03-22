@@ -69,7 +69,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--decrease_saturation", type=float, default=0.85)
     parser.add_argument("--base_preprocessing", type=bool, default=False)
     parser.add_argument("--focal_loss", type=bool, default=False)
-    parser.add_argument("--l_loss" , type=int, default=1)
+    parser.add_argument("--l_loss" , type=float, default=1)
     args = parser.parse_args()
     
     
