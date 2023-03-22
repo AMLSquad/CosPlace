@@ -48,6 +48,7 @@ class MarginCosineProduct(nn.Module):
         SM = self.l * torch.mm(inputs, self.weight.t())
         SM = F.cross_entropy(SM, label, reduction='none')
         output = output + SM
+        print(output)
         return output
     
     def __repr__(self):
