@@ -65,3 +65,4 @@ class NewLoss():
 
     def __call__(self, output: Tensor) -> Tensor:
         return torch.mean(-1 * torch.log(output))
+    

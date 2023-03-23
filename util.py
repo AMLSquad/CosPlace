@@ -4,9 +4,10 @@ import shutil
 import logging
 from typing import Type, List
 from argparse import Namespace
-from cosface_loss import MarginCosineProduct
-#from sphereface_loss import MarginCosineProduct
-#from arcface_loss import MarginCosineProduct
+#from cosface_loss import MarginCosineProduct
+#from sphereface_loss import MarginCosineProduct as sMCP
+#from arcface_loss import MarginCosineProduct as aMCP
+from test_new_loss import MarginCosineProduct as MCP
 
 def move_to_device(optimizer: Type[torch.optim.Optimizer], device: str):
     for state in optimizer.state.values():
@@ -26,7 +27,7 @@ def save_checkpoint(state: dict, is_best: bool, output_folder: str,
 
 
 def resume_train(args: Namespace, output_folder: str, model: torch.nn.Module,
-                 model_optimizer: Type[torch.optim.Optimizer], classifiers: List[MarginCosineProduct],
+                 model_optimizer: Type[torch.optim.Optimizer], classifiers: List[MCP],
                  classifiers_optimizers: List[Type[torch.optim.Optimizer]]):
     """Load model, optimizer, and other training parameters"""
     logging.info(f"Loading checkpoint: {args.resume_train}")
