@@ -16,3 +16,6 @@ small_FDA_0.05
 *.zip
 small_FDA_0.05.zip
 compact
+*.pth
+soups
+soups_output/
