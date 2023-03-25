@@ -255,6 +255,13 @@ Here is the bibtex to cite our paper
     <td> 71.4 / 84.8, / 89.5 </td>
     <td> 64.8 / 74.3  / 81.0  </td> 
   </tr>
+  <tr>
+    <td>Soup Face</td>
+    <td>51.6 / 65.1 / 70.1 </td>
+    <td>68.9 / 82.5, / 87.9 </td>
+    <td>52.4 / 71.4  / 77.1  </td> 
+  </tr>
+
 
 
 
