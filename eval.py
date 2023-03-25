@@ -48,5 +48,12 @@ if __name__ == "__main__":
     test_ds = TestDataset(args.test_set_folder, queries_folder=args.test_queries_folder,
                         positive_dist_threshold=args.positive_dist_threshold)
 
-    recalls, recalls_str = test.test(args, test_ds, model)
+    recalls, recalls_str, descriptors = test.test(args, test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
+
+    if args.test_tokyo_night:
+        test_ds = TestDataset(args.test_set_folder, queries_folder="night/",
+                        positive_dist_threshold=args.positive_dist_threshold)
+        recalls, recalls_str, _ = test.test(args, test_ds, model, descriptors)
+        logging.info(f"{test_ds}: {recalls_str}")
+    

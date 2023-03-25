@@ -14,34 +14,35 @@ from torch.utils.data import DataLoader, Dataset
 RECALL_VALUES = [1, 5, 10, 20]
 
 
-def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.ndarray, str]:
+def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descriptors = None) -> Tuple[np.ndarray, str]:
     """Compute descriptors of the given dataset and compute the recalls."""
     
-
-
     model = model.eval()
     with torch.no_grad():
         logging.debug("Extracting database descriptors for evaluation/testing")
         # Used to store the descriptors of the images
         # Both queries and database descriptors are stored in this array
-        all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
-        database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
-        database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
-                                         batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
-       
-        
+        if db_descriptors is None:
+            all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
+            database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
+            database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
+                                            batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
 
-        for images, indices in tqdm(database_dataloader, ncols=100):
-            descriptors = model(images.to(args.device))
-            descriptors = descriptors.cpu().numpy()
-            all_descriptors[indices.numpy(), :] = descriptors
+            for images, indices,_ in tqdm(database_dataloader, ncols=100):
+                descriptors = model(images.to(args.device))
+                descriptors = descriptors.cpu().numpy()
+                all_descriptors[indices.numpy(), :] = descriptors
+        else:
+            db_descriptors = db_descriptors.cpu().numpy()
+            all_descriptors[indices.numpy(), :] = db_descriptors
+        
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))
         queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers,
                                         batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))
-        for images, indices in tqdm(queries_dataloader, ncols=100):
+        for images, indices,_ in tqdm(queries_dataloader, ncols=100):
             descriptors = model(images.to(args.device))
             descriptors = descriptors.cpu().numpy()
             all_descriptors[indices.numpy(), :] = descriptors
@@ -81,4 +82,4 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     # Divide by queries_num and multiply by 100, so the recalls are in percentages
     recalls = recalls / eval_ds.queries_num * 100
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
-    return recalls, recalls_str
+    return recalls, recalls_str, db_descriptors

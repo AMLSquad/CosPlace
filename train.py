@@ -22,6 +22,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
+    
     args = parser.parse_arguments()
     start_time = datetime.now()
     output_folder = f"logs/{args.save_dir}/{args.experiment_name}_{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
@@ -69,9 +70,9 @@ if __name__ == "__main__":
     if args.loss == "cosface": 
         classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
     elif args.loss == "sphereface":
-        classifiers = [sphereface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+        classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
     elif args.loss == "arcface":
-        classifiers = [arcface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+        classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
     else:
         logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
         exit
@@ -240,7 +241,7 @@ if __name__ == "__main__":
                     f"loss = {epoch_losses.mean():.4f}")
         
         #### Evaluation
-        recalls, recalls_str = test.test(args, val_ds, model)
+        recalls, recalls_str,_ = test.test(args, val_ds, model)
         logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
         is_best = recalls[0] > best_val_recall1
         best_val_recall1 = max(recalls[0], best_val_recall1)
@@ -262,7 +263,7 @@ if __name__ == "__main__":
     model.load_state_dict(best_model_state_dict)
 
     logging.info(f"Now testing on the test set: {test_ds}")
-    recalls, recalls_str = test.test(args, test_ds, model)
+    recalls, recalls_str,_ = test.test(args, test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
