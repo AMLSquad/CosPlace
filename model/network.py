@@ -10,6 +10,8 @@ import os
 
 CHANNELS_NUM_IN_LAST_CONV = {
     "resnet18": 512,
+    "resnet18_gldv2": 512,
+    "resnet18_places": 512,
     "resnet50": 2048,
     "resnet101": 2048,
     "resnet152": 2048,
