@@ -27,7 +27,7 @@ def save_checkpoint(state: dict, is_best: bool, output_folder: str,
 
 
 def resume_train(args: Namespace, output_folder: str, model: torch.nn.Module,
-                 model_optimizer: Type[torch.optim.Optimizer], classifiers: List[MCP],
+                 model_optimizer: Type[torch.optim.Optimizer], classifiers,
                  classifiers_optimizers: List[Type[torch.optim.Optimizer]]):
     """Load model, optimizer, and other training parameters"""
     logging.info(f"Loading checkpoint: {args.resume_train}")

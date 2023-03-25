@@ -70,6 +70,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--base_preprocessing", type=bool, default=False)
     parser.add_argument("--focal_loss", type=bool, default=False)
     parser.add_argument("--l_loss" , type=float, default=1)
+    parser.add_argument("--backbone_path", type=str, default=None)
     args = parser.parse_args()
     
     
