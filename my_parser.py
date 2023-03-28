@@ -48,7 +48,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--device", type=str, default="cuda",
                         choices=["cuda", "cpu"], help="_")
     parser.add_argument("--seed", type=int, default=0, help="_")
-    parser.add_argument("--num_workers", type=int, default=8, help="_")
+    parser.add_argument("--num_workers", type=int, default=1, help="_")
     # Paths parameters
     parser.add_argument("--dataset_folder", type=str, default="small/",
                         help="path of the folder with train/val/test sets")
@@ -67,8 +67,12 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--reduce_brightness", type=float, default=0.65)
     parser.add_argument("--increase_contrast", type=float, default=1.15)
     parser.add_argument("--decrease_saturation", type=float, default=0.85)
-
+    parser.add_argument("--soup_folder", type=str, default="soup_models/")
     parser.add_argument("--base_preprocessing", type=bool, default=False)
+    parser.add_argument("--uniform_soup", type=bool, default=False)
+    parser.add_argument("--greedy_soup", type=bool, default=False)
+    parser.add_argument("--test_tokyo_night", type=bool, default=False)
+
     args = parser.parse_args()
     
     

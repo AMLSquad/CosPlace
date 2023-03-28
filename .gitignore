@@ -12,3 +12,10 @@ tokyo_xs
 small_night
 models
 target_night
+small_FDA_0.05
+*.zip
+small_FDA_0.05.zip
+compact
+*.pth
+soups
+soups_output/
