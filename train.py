@@ -184,7 +184,7 @@ if __name__ == "__main__":
             images, targets = images.to(args.device), targets.to(args.device)
             
             if args.domain_adaptation:
-                da_images, da_targets = next(da_dataloader)
+                da_images, da_targets,_ = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
             if args.augmentation_device == "cuda":
