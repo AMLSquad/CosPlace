@@ -45,7 +45,11 @@ if __name__ == "__main__":
     # set model to train mode
     model = model.to(args.device).train()
     #### Optimizer
-    criterion = torch.nn.CrossEntropyLoss()
+    if args.loss == "new_loss":
+        logging.debug("Using new loss")
+        criterion = NewLoss()
+    else:
+        criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
 
 
@@ -73,6 +77,8 @@ if __name__ == "__main__":
         classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
     elif args.loss == "arcface":
         classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
+    elif args.loss == "new_loss":
+        classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group), l = args.l_loss) for group in groups]
     else:
         logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
         exit
@@ -195,7 +201,10 @@ if __name__ == "__main__":
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
                 output = classifiers[current_group_num](descriptors, targets)
                 #Applies the softmax loss
-                loss = criterion(output, targets)
+                if (args.loss == "new_loss"):
+                    loss = criterion(output)
+                else:
+                    loss = criterion(output, targets)
                 loss.backward()
                 #append the loss to the epoch losses
 

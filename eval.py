@@ -23,10 +23,9 @@ if __name__ == "__main__":
     logging.info(f"Arguments: {args}")
     logging.info(f"The outputs are being saved in {output_folder}")
 
-    #### Model
-    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
-
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
+    #### Model
+    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, backbone_path=args.backbone_path)
 
     if args.resume_model is not None:
         logging.info(f"Loading model from {args.resume_model}")

@@ -14,7 +14,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--min_images_per_class", type=int, default=10, help="_")
     # Model parameters
     parser.add_argument("--backbone", type=str, default="resnet18",
-                        choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152"], help="_")
+                        choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152", "resnet18_places", "resnet18_gldv2"], help="_")
     parser.add_argument("--fc_output_dim", type=int, default=512,
                         help="Output dimension of final fully connected layer")
     # Training parameters
@@ -72,7 +72,14 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--uniform_soup", type=bool, default=False)
     parser.add_argument("--greedy_soup", type=bool, default=False)
     parser.add_argument("--test_tokyo_night", type=bool, default=False)
+    parser.add_argument("--base_preprocessing", type=bool, default=False)
+    parser.add_argument("--uniform_soup", type=bool, default=False)
+    parser.add_argument("--greedy_soup", type=bool, default=False)
+    parser.add_argument("--test_tokyo_night", type=bool, default=False)
 
+    parser.add_argument("--focal_loss", type=bool, default=False)
+    parser.add_argument("--l_loss" , type=float, default=1)
+    parser.add_argument("--backbone_path", type=str, default=None)
     args = parser.parse_args()
     
     
@@ -101,7 +108,7 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.test_set_folder):
         raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
 
-    if args.loss not in ["cosface", "arcface", "sphereface"]:
+    if args.loss not in ["cosface", "arcface", "sphereface", "new_loss"]:
         raise Exception("No valid loss for --loss arg, please try again typing 'cosface', 'sphereface' or 'arcface'")
 
 

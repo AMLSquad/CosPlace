@@ -6,23 +6,20 @@ from torch import nn
 import copy
 from torch.autograd import Function
 from model.layers import Flatten, L2Norm, GeM
-
+import os
 
 CHANNELS_NUM_IN_LAST_CONV = {
     "resnet18": 512,
+    "resnet18_gldv2": 512,
+    "resnet18_places": 512,
     "resnet50": 2048,
     "resnet101": 2048,
     "resnet152": 2048,
     "vgg16": 512,
 }
 
-CHANNELS_AFTER_AVGPOOLING = {
-    "resnet18": 512,
-    "resnet50": 2048,
-    "resnet101": 2048,
-    "resnet152": 2048,
-    "vgg16": 512,
-}
+
+
 
 class GradientReversalFunction(torch.autograd.Function):
     @staticmethod
@@ -54,9 +51,9 @@ def get_discriminator(input_dim, num_classes=2):
 
 
 class GeoLocalizationNet(nn.Module):
-    def __init__(self, backbone, fc_output_dim, domain_adaptation = False):
+    def __init__(self, backbone, fc_output_dim, domain_adaptation = False, backbone_path = None):
         super().__init__()
-        self.backbone, features_dim, _ = get_backbone(backbone)
+        self.backbone, features_dim, _ = get_backbone(backbone, backbone_path)
         self.aggregation = nn.Sequential(
                 L2Norm(),
                 # For each channel, get only one value
@@ -81,7 +78,7 @@ class GeoLocalizationNet(nn.Module):
         return self.aggregation(features)
 
 
-def get_backbone(backbone_name):
+def get_backbone(backbone_name, backbone_path = None):
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
             backbone = torchvision.models.resnet18(pretrained=True,)
@@ -91,7 +88,21 @@ def get_backbone(backbone_name):
             backbone = torchvision.models.resnet101(pretrained=True)
         elif backbone_name == "resnet152":
             backbone = torchvision.models.resnet152(pretrained=True)
-        layers = []
+        elif backbone_name == "resnet18_places":
+            if backbone_path is None:
+                raise ValueError("You must specify the path to the pretrained model")
+            backbone = torchvision.models.resnet18(num_classes = 365)
+            file_path = backbone_path
+            state_dict = torch.load(file_path, map_location=torch.device('cpu'))
+            backbone.load_state_dict(state_dict)
+        elif backbone_name == "resnet18_gldv2":
+            if backbone_path is None:
+                raise ValueError("You must specify the path to the pretrained model")
+            backbone = torchvision.models.resnet18(num_classes = 512)
+            file_path = backbone_path
+            state_dict = torch.load(file_path, map_location=torch.device('cpu'))
+            backbone.load_state_dict(state_dict)
+
         for name, child in backbone.named_children():
             if name == "layer3":  # Freeze layers before conv_3
                 break
@@ -116,4 +127,4 @@ def get_backbone(backbone_name):
     
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]
     
-    return backbone, features_dim, 0
+    return backbone, features_dim, avg_layer
