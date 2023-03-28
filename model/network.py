@@ -103,13 +103,7 @@ def get_backbone(backbone_name, backbone_path = None):
             state_dict = torch.load(file_path, map_location=torch.device('cpu'))
             backbone.load_state_dict(state_dict)
 
-        for name, child in backbone.named_children():
-            if name == "layer3":  # Freeze layers before conv_3
-                break
-
-            for params in child.parameters():
-                params.requires_grad = False
-            layers.append(child)
+        
         
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
         avg_layer = list(backbone.children())[-2:-1]
