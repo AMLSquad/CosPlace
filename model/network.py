@@ -19,8 +19,6 @@ CHANNELS_NUM_IN_LAST_CONV = {
 }
 
 
-
-
 class GradientReversalFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
