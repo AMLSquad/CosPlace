@@ -31,7 +31,7 @@ class TargetDataset(data.Dataset):
         pil_img = open_image(image_path)
         normalized_img = self.base_transform(pil_img)
         #1 stands for night
-        return normalized_img, 1, image_path
+        return normalized_img, 1
 
     def __len__(self):
         return len(self.images_paths)
