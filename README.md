@@ -263,7 +263,12 @@ Here is the bibtex to cite our paper
     <td>70.5 / 83.5 / 87.6 </td>
     <td>52.4 / 72.4  / 77.1  </td> 
   </tr>
-
+  <tr>
+    <td>FDA+PP+colorjitter+EMMS</td>
+    <td>50.3 / 65.2 / 70.9 </td>
+    <td>70.5 / 86.3 / 90.5 </td>
+    <td>54.3 / 79.0  / 84.8  </td> 
+  </tr>
   
   
 
