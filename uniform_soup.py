@@ -12,7 +12,6 @@ import sys
 def load_model(model_path,args):
     model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
     model_state_dict = torch.load(model_path)
-
     model.load_state_dict(delete_discriminator_layer(model_state_dict))
     return model
 
