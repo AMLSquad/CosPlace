@@ -228,7 +228,7 @@ Here is the bibtex to cite our paper
     <td>59.0 / 79.0 / 83.8</td> 
   </tr>
   <tr>
-    <td>FDA+PP+DA (alpha = 1</td>
+    <td>FDA+PP+DA (alpha = 1)</td>
     <td>47.2 / 62.5 / 67.7</td>
     <td>58.1 / 71.4 / 78.1</td>
     <td>68.3 / 82.9 / 87.3</td> 
