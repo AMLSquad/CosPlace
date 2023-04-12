@@ -269,6 +269,12 @@ Here is the bibtex to cite our paper
     <td>70.5 / 86.3 / 90.5 </td>
     <td>54.3 / 79.0  / 84.8  </td> 
   </tr>
+  <tr>
+    <td>Places 365 pretrain</td>
+    <td> 50.3 / 65.5 / 70.3</td>
+    <td> 64.4 / 81.6 / 87.6 </td>
+    <td> 42.9 / 68.6 / 77.1 </td> 
+  </tr>
   
   
 
