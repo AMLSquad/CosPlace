@@ -234,7 +234,7 @@ Here is the bibtex to cite our paper
     <td>68.3 / 82.9 / 87.3</td> 
   </tr>
    <tr>
-    <td>FDA+PP+DA (beta = 0.9)</td>
+    <td>FDA+PP+DA (beta = 0.09)</td>
     <td>46.5 / 61.8 / 68.3 </td>
     <td> 71.4 / 84.8 / 89.5 </td>
     <td> 64.8 / 74.3  / 81.0  </td> 
