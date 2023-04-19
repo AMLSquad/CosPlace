@@ -288,7 +288,7 @@ Here is the bibtex to cite our paper
     <td> 50.5 / 73.3 / 81.0 </td> 
   </tr>
   <tr>
-    <td>Face soup + EMMS</td>
+    <td> FDA PP DA soup</td>
     <td>  51.4 / 65.3 / 70.3 </td>
     <td>  70.8 / 84.1 / 88.9 </td>
     <td>  55.2 / 75.2 / 81.9 </td> 
