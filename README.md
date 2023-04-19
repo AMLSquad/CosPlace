@@ -275,6 +275,24 @@ Here is the bibtex to cite our paper
     <td> 64.4 / 81.6 / 87.6 </td>
     <td> 42.9 / 68.6 / 77.1 </td> 
   </tr>
+  <tr>
+    <td>Different Alphas</td>
+    <td> 49.8 / 64.7 / 69.8</td>
+    <td> 72.1 / 84.1 / 89.2 </td>
+    <td> 57.1 / 78.1 /83.8 </td> 
+  </tr>
+  <tr>
+    <td>Face soup + EMMS</td>
+    <td> 51.6 / 66.8 / 70.7</td>
+    <td> 67.6 / 84.1 / 89.5</td>
+    <td> 50.5 / 73.3 / 81.0 </td> 
+  </tr>
+  <tr>
+    <td>Face soup + EMMS</td>
+    <td>  51.4 / 65.3 / 70.3 </td>
+    <td>  70.8 / 84.1 / 88.9 </td>
+    <td>  55.2 / 75.2 / 81.9 </td> 
+  </tr>
   
   
 
