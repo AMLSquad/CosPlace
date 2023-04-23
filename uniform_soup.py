@@ -23,12 +23,27 @@ def uniform_soup(models_list,  args):
         soup[param] = sum([m.state_dict()[param].clone() for m in models_list]) / len(models_list)
     agg_model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
     agg_model.load_state_dict(soup)
-    val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
+    torch.save(agg_model.state_dict(),f"soup.pth")
     agg_model = agg_model.to(args.device)
     agg_model = agg_model.eval()
+
+    val_ds = TestDataset("small/val", queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
     _, recalls_str,_ = test.test(args, val_ds, agg_model)
     logging.info(f"{val_ds}: {recalls_str}")
-    torch.save(agg_model.state_dict(),f"soup.pth")
+
+    val_ds = TestDataset("small/test", queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+    _, recalls_str,_ = test.test(args, val_ds, agg_model)
+    logging.info(f"{val_ds}: {recalls_str}")
+
+    val_ds = TestDataset("tokyo_xs/test", queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+    _, recalls_str,_ = test.test(args, val_ds, agg_model)
+    logging.info(f"{val_ds}: {recalls_str}")
+
+    val_ds = TestDataset("tokyo_xs/test", queries_folder="night", positive_dist_threshold=args.positive_dist_threshold)
+    _, recalls_str,_ = test.test(args, val_ds, agg_model)
+    logging.info(f"{val_ds}: {recalls_str}")
+
+    
 
 
 def greedy_soup(models_list, args):

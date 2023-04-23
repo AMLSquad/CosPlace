@@ -88,7 +88,7 @@ def add_gaussian_noise(image):
     
     return image
 
-def apply_post_processing(filename, fda_applied = True):
+def apply_post_processing(image, fda_applied = True):
     # Open the image
     if fda_applied:
         brightness_min = 0.8
@@ -112,7 +112,7 @@ def apply_post_processing(filename, fda_applied = True):
         contrast_max = 1.2
         gradient_min = 1.2
         gradient_max = 1.4
-    image = Image.open(filename)
+    
     image = brightness(image, brightness_min, brightness_max)
     image = desaturate(image, desaturate_min, desaturate_max)
     image = blue_tint(image, blue_tint_min, blue_tint_max)
@@ -122,17 +122,3 @@ def apply_post_processing(filename, fda_applied = True):
     image = add_gaussian_noise(image)
     return image
 
-if __name__ == "__main__":
-    directory = sys.argv[1]
-    output_directory = sys.argv[2]
-    if not os.path.isdir(output_directory):
-      os.makedirs(output_directory)
-    images_paths = sorted(glob(f"{directory}/**/*.jpg", recursive=True))
-    for filename in tqdm(images_paths):
-        internal_dir, image_name = filename.split("/")[-2], filename.split("/")[-1]
-
-        night_image = apply_post_processing(filename, False)
-        
-        if not os.path.isdir(os.path.join(output_directory, internal_dir)):
-            os.makedirs(os.path.join(output_directory, internal_dir))
-        night_image.save(os.path.join(output_directory,internal_dir, image_name))

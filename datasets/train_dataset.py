@@ -3,7 +3,7 @@ import os
 import torch
 import random
 import logging
-from our_code.post_processing_night_image import apply_post_processing
+from data_augmentation.post_processing_night_image import apply_post_processing
 import numpy as np
 from glob import glob
 from PIL import Image

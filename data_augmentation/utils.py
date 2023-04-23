@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+from data_augmentation import older_scipy
+from PIL import Image
 
 
 def extract_ampl_phase(fft_im):
@@ -91,3 +93,22 @@ def FDA_source_to_target_np( src_img, trg_img, L=0.1 ):
 
     return src_in_trg
 
+def apply_fda(source: str, target: str, ) -> Image :
+    im_src = Image.open(source).convert('RGB')
+    im_trg = Image.open(target).convert('RGB')
+    w,h = im_src.size
+    im_src = im_src.resize( (1024,512), Image.BICUBIC )
+    im_trg = im_trg.resize( (1024,512), Image.BICUBIC )
+    im_src = np.asarray(im_src, np.float32)
+    im_trg = np.asarray(im_trg, np.float32)
+    im_src = im_src.transpose((2, 0, 1))
+    im_trg = im_trg.transpose((2, 0, 1))
+    im_src = torch.from_numpy(im_src).unsqueeze(0)
+    im_trg = torch.from_numpy(im_trg).unsqueeze(0)
+    src_in_trg = FDA_source_to_target( im_src, im_trg, L=0.01)
+    src_in_trg = torch.Tensor.numpy(src_in_trg.squeeze(0))
+    src_in_trg = src_in_trg.transpose((1,2,0))
+    src_in_trg = src_in_trg.astype(int)
+    
+    return older_scipy.toimage(src_in_trg, cmin=0.0, cmax=255.0).resize((w,h))
+    

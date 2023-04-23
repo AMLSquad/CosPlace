@@ -26,12 +26,13 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
             all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
             database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
             database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
-                                            batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
+                                            batch_size=1, pin_memory=(args.device == "cuda"))
 
             for images, indices,_ in tqdm(database_dataloader, ncols=100):
                 descriptors = model(images.to(args.device))
                 descriptors = descriptors.cpu().numpy()
                 all_descriptors[indices.numpy(), :] = descriptors
+                db_descriptors = descriptors
         else:
             db_descriptors = db_descriptors.cpu().numpy()
             all_descriptors[indices.numpy(), :] = db_descriptors
