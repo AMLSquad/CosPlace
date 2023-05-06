@@ -49,16 +49,26 @@ def get_discriminator(input_dim, num_classes=2):
 
 
 class GeoLocalizationNet(nn.Module):
-    def __init__(self, backbone, fc_output_dim, domain_adaptation = False, backbone_path = None):
+    def __init__(self, backbone, fc_output_dim, domain_adaptation = False, backbone_path = None, is_sma = False):
         super().__init__()
         self.backbone, features_dim, _ = get_backbone(backbone, backbone_path)
-        self.aggregation = nn.Sequential(
-                L2Norm(),
-                # For each channel, get only one value
-                GeM(),
-                Flatten(),
-                nn.Linear(features_dim, fc_output_dim)
-            )
+        if is_sma:
+            self.aggregation = nn.Sequential(
+                    L2Norm(),
+                    # For each channel, get only one value
+                    GeM(),
+                    Flatten(),
+                    nn.Linear(features_dim, fc_output_dim)
+                )
+        else:
+            self.aggregation = nn.Sequential(
+                    L2Norm(),
+                    # For each channel, get only one value
+                    GeM(),
+                    Flatten(),
+                    nn.Linear(features_dim, fc_output_dim),
+                    L2Norm()
+                )
         # Domain adaptation
         self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
         
