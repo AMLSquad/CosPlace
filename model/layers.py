@@ -39,8 +39,5 @@ class L2Norm(nn.Module):
         super().__init__()
         self.dim = dim
     
-    def forward(self, x, is_sma=False):
-        if is_sma == True:
-            return x
-        else:
-            return F.normalize(x, p=2.0, dim=self.dim)
+    def forward(self, x):
+        return F.normalize(x, p=2.0, dim=self.dim)

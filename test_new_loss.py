@@ -15,6 +15,13 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
     w2 = torch.norm(x2, 2, dim)
     return ip / torch.ger(w1, w2).clamp(min=eps)
 
+def my_softmax(t: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+    out = []
+    softmax = F.softmax(t, dim=1)
+    for idx, lab in enumerate(label):
+        out.append(softmax[idx,lab])
+    return torch.tensor(out)
+    
 
 class MarginCosineProduct(nn.Module):
     """Implement of large margin cosine distance:
@@ -35,19 +42,43 @@ class MarginCosineProduct(nn.Module):
         nn.init.xavier_uniform_(self.weight)
 
     
+    """
+    
+
+    import torch.nn as nn
+    import torch.nn.functional as F
+
+    new_tensor = torch.tensor([[1,2,3,4,5,6],
+                            [7,8,9,10,11,12]], dtype=torch.float)
+    label = torch.tensor([3,4])
+    one_hot = torch.zeros_like(new_tensor)
+    onehot.scatter(1, label.view(-1, 1), 1.0)
+    softmax = F.softmax(new_tensor, dim=1)
+    indices = torch.nonzero(one_hot == 1)
+    out = []
+    for idx, lab in enumerate(label):
+        out.append(softmax[idx,lab])
+    out_cosface = torch.tensor(out)
+    #torch.save(new_tensor, "soups_output/face_soup/prova.pth")
+    
+    
+    """
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         #Cosine similarity between x and weights.
-        cosine = cosine_sim(inputs, self.weight)
+        # sposto la normalizzazione qui
+        normalized_inputs = F.normalize(inputs, p=2.0, dim=1)
+
+        cosine = cosine_sim(normalized_inputs, self.weight)
         one_hot = torch.zeros_like(cosine)
         #label.view => vettore colonna. 
         #Mette m solo dove c'è yi. Il resto rimane senza m. 
         one_hot.scatter_(1, label.view(-1, 1), 1.0)
         output = self.s * (cosine - one_hot * self.m) # batch x dimensione output
-        output = torch.exp(F.cross_entropy(output, label, reduction='none'))
+        softmax_cosface = my_softmax(output, label)
         SM = torch.mm(inputs, self.weight.t())
-        SM = self.l * torch.exp(F.cross_entropy(SM, label, reduction='none'))
-        output = output + SM
-        output = torch.mean(torch.log(output), dim=0)
+        softmax_SM = my_softmax(SM, label)
+        sma = softmax_cosface + self.l * softmax_SM
+        output = torch.mean(torch.log(sma), dim=0)
         return output
     
     def __repr__(self):

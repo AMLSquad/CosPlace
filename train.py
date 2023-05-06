@@ -34,8 +34,7 @@ if __name__ == "__main__":
     logging.info(f"The outputs are being saved in {output_folder}")
     
     #### Model
-    is_sma = True if args.loss == "new_loss" else False
-    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path, is_sma = is_sma)
+    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path)
 
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
