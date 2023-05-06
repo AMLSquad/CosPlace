@@ -62,9 +62,6 @@ class GeoLocalizationNet(nn.Module):
         # Domain adaptation
         self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
         
-        
-
-
     
     def forward(self, x, grl=False):
         features = self.backbone(x)

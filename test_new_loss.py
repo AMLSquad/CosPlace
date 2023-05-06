@@ -40,29 +40,7 @@ class MarginCosineProduct(nn.Module):
         self.l = l
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         nn.init.xavier_uniform_(self.weight)
-
     
-    """
-    
-
-    import torch.nn as nn
-    import torch.nn.functional as F
-
-    new_tensor = torch.tensor([[1,2,3,4,5,6],
-                            [7,8,9,10,11,12]], dtype=torch.float)
-    label = torch.tensor([3,4])
-    one_hot = torch.zeros_like(new_tensor)
-    onehot.scatter(1, label.view(-1, 1), 1.0)
-    softmax = F.softmax(new_tensor, dim=1)
-    indices = torch.nonzero(one_hot == 1)
-    out = []
-    for idx, lab in enumerate(label):
-        out.append(softmax[idx,lab])
-    out_cosface = torch.tensor(out)
-    #torch.save(new_tensor, "soups_output/face_soup/prova.pth")
-    
-    
-    """
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         #Cosine similarity between x and weights.
         # sposto la normalizzazione qui
