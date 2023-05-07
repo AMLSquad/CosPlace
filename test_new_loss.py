@@ -56,7 +56,7 @@ class MarginCosineProduct(nn.Module):
         SM = torch.mm(inputs, self.weight.t())
         softmax_SM = my_softmax(SM, label)
         sma = softmax_cosface + self.l * softmax_SM
-        output = torch.mean(torch.log(sma), dim=0)
+        output = torch.log(sma)
         return output
     
     def __repr__(self):

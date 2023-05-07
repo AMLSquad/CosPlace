@@ -49,7 +49,7 @@ if __name__ == "__main__":
     #### Optimizer
     if args.loss == "new_loss":
         logging.debug("Using new loss")
-        criterion = test_new_loss.NewLoss()
+        criterion = torch.nn.NLLLoss()
     else:
         criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
