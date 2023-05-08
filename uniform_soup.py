@@ -8,6 +8,7 @@ import os
 import commons
 import logging
 import sys
+from util import delete_discriminator_layer
 
 def load_model(model_path,args):
     model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
@@ -87,15 +88,7 @@ def greedy_soup(models_list, args):
 def compare(m1):
     return m1[1]
 
-def delete_discriminator_layer(model):
-    if "discriminator.1.weight" in model:
-            del model["discriminator.1.weight"]
-            del model["discriminator.1.bias"]
-            del model["discriminator.3.weight"]
-            del model["discriminator.3.bias"]
-            del model["discriminator.5.weight"]
-            del model["discriminator.5.bias"]
-    return model
+
 
 
 if __name__ == "__main__":

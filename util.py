@@ -7,7 +7,18 @@ from argparse import Namespace
 #from cosface_loss import MarginCosineProduct
 #from sphereface_loss import MarginCosineProduct as sMCP
 #from arcface_loss import MarginCosineProduct as aMCP
-from test_new_loss import MarginCosineProduct as MCP
+from test_new_loss import EMMS as MCP
+
+def delete_discriminator_layer(model):
+    if "discriminator.1.weight" in model:
+            del model["discriminator.1.weight"]
+            del model["discriminator.1.bias"]
+            del model["discriminator.3.weight"]
+            del model["discriminator.3.bias"]
+            del model["discriminator.5.weight"]
+            del model["discriminator.5.bias"]
+    return model
+
 
 def move_to_device(optimizer: Type[torch.optim.Optimizer], device: str):
     for state in optimizer.state.values():

@@ -54,7 +54,7 @@ class GeoLocalizationNet(nn.Module):
         self.backbone, features_dim, _ = get_backbone(backbone, backbone_path)
         if is_sma:
             self.aggregation = nn.Sequential(
-                    L2Norm(),
+                    #L2Norm(),
                     # For each channel, get only one value
                     GeM(),
                     Flatten(),

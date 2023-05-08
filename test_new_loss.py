@@ -16,14 +16,11 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
     return ip / torch.ger(w1, w2).clamp(min=eps)
 
 def my_softmax(t: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-    out = []
     softmax = F.softmax(t, dim=1)
-    for idx, lab in enumerate(label):
-        out.append(softmax[idx,lab])
-    return torch.tensor(out)
+    return torch.gather(softmax, 1, label.view(-1,1))
     
 
-class MarginCosineProduct(nn.Module):
+class EMMS(nn.Module):
     """Implement of large margin cosine distance:
     Args:
         in_features: size of each input sample
@@ -44,19 +41,23 @@ class MarginCosineProduct(nn.Module):
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         #Cosine similarity between x and weights.
         # sposto la normalizzazione qui
+       
         normalized_inputs = F.normalize(inputs, p=2.0, dim=1)
-
         cosine = cosine_sim(normalized_inputs, self.weight)
+        
         one_hot = torch.zeros_like(cosine)
         #label.view => vettore colonna. 
         #Mette m solo dove c'è yi. Il resto rimane senza m. 
         one_hot.scatter_(1, label.view(-1, 1), 1.0)
         output = self.s * (cosine - one_hot * self.m) # batch x dimensione output
         softmax_cosface = my_softmax(output, label)
+
         SM = torch.mm(inputs, self.weight.t())
+        
         softmax_SM = my_softmax(SM, label)
         sma = softmax_cosface + self.l * softmax_SM
-        output = torch.mean(torch.log(sma), dim=0)
+        output =torch.log(sma)
+    
         return output
     
     def __repr__(self):
@@ -67,10 +68,12 @@ class MarginCosineProduct(nn.Module):
                + ', m=' + str(self.m) + ')'
 
 
-class NewLoss():
+class Mean():
 
     def __init__(self):
         super().__init__()
 
     def __call__(self, output: Tensor) -> Tensor:
+        
+        
         return torch.mean(output)
