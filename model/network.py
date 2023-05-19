@@ -7,6 +7,7 @@ import copy
 from torch.autograd import Function
 from model.layers import Flatten, L2Norm, GeM
 import os
+import model.autoencoder as ae
 
 CHANNELS_NUM_IN_LAST_CONV = {
     "resnet18": 512,
@@ -49,7 +50,7 @@ def get_discriminator(input_dim, num_classes=2):
 
 
 class GeoLocalizationNet(nn.Module):
-    def __init__(self, backbone, fc_output_dim, domain_adaptation = False, backbone_path = None):
+    def __init__(self, backbone, fc_output_dim, domain_adaptation = False, backbone_path = None, aada=False):
         super().__init__()
         self.backbone, features_dim, _ = get_backbone(backbone, backbone_path)
         self.aggregation = nn.Sequential(
@@ -62,17 +63,24 @@ class GeoLocalizationNet(nn.Module):
             )
         # Domain adaptation
         self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
+        self.autoencoder = ae.Autoencoder() if aada == True else None
         
         
 
 
     
-    def forward(self, x, grl=False):
+    def forward(self, x, grl=False, aada=False, images_source=None, images_target=None):
         features = self.backbone(x)
         if grl==True:
             # perform adaptation round
             # logits output dim is num_domains
             return self.discriminator(features)
+        elif aada==True:
+            # perform adaptation round
+            # logits output dim is num_domains
+            output_sources = self.autoencoder(images_source)
+            output_targets = self.autoencoder(images_target)
+            return self.discriminator(features), output_sources, output_targets
         return self.aggregation(features)
 
 

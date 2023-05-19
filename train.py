@@ -23,6 +23,10 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
+
+    def enable_disable_gradient(model_component, flag):
+        model_component.requires_grad_(flag)
+
     
     args = parser.parse_arguments()
     start_time = datetime.now()
@@ -32,9 +36,9 @@ if __name__ == "__main__":
     logging.info(" ".join(sys.argv))
     logging.info(f"Arguments: {args}")
     logging.info(f"The outputs are being saved in {output_folder}")
-    
+
     #### Model
-    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path)
+    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path, aada = args.aada)
 
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -53,13 +57,16 @@ if __name__ == "__main__":
         criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
 
-
     if args.domain_adaptation:
         target_dataset = TargetDataset(args.target_dataset_folder)
         domain_criterion = torch.nn.CrossEntropyLoss()
+    if args.aada:
+        target_dataset = TargetDataset(args.target_dataset_folder)
+        domain_criterion = torch.nn.CrossEntropyLoss()
+        autoencoder_criterion = torch.nn.MSELoss()
 
 
-    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters(), model.discriminator.parameters() if args.domain_adaptation else [])
+    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters(), model.discriminator.parameters() if args.domain_adaptation else [], model.autoencoder.parameters() if args.aada else [])
     model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
 
 
@@ -170,10 +177,11 @@ if __name__ == "__main__":
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
         
-        if args.domain_adaptation:
+        if args.domain_adaptation or args.aada:
             da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,num_workers=args.num_workers,
                                                         batch_size = 24, shuffle=True,
                                                         pin_memory=(args.device == "cuda"), drop_last=True)
+            
         dataloader_iterator = iter(dataloader)
         
         model = model.train()
@@ -184,9 +192,10 @@ if __name__ == "__main__":
             
             images, targets = images.to(args.device), targets.to(args.device)
             
-            if args.domain_adaptation:
+            if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
+            
 
             if args.augmentation_device == "cuda":
                 images = gpu_augmentation(images)
@@ -194,7 +203,6 @@ if __name__ == "__main__":
             model_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()
 
-            
             
             if not args.use_amp16:
                 #Get descriptors from the model (ends with fc and normalization)
@@ -211,14 +219,48 @@ if __name__ == "__main__":
 
                 
                 da_loss = 0
-                if args.domain_adaptation:
+                enc_loss = 0
+                if args.domain_adaptation and not args.aada:
                     da_output = model(da_images, grl=True)
                     da_loss = criterion(da_output, da_targets)
                     (da_loss * args.grl_loss_weight).backward()
                     da_loss = (da_loss * args.grl_loss_weight).item()
                     del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
-                del loss, output, images, da_loss
+                if args.aada:
+                #    python train.py --dataset_folder small --groups_num 1 --epochs_num 3 --device cpu 
+                #    --domain_adaptation True --target_dataset_folder tokyo-night --pseudo_target_folder small_night 
+                #    --aada True
+
+                   images_source = da_images[da_targets==0, :, :, :]
+                   images_target = da_images[da_targets==1, :, :, :]
+                   da_output, enc_output_0, enc_output_1 = model(da_images, aada=True, images_source=images_source, images_target=images_target)
+                   
+                   enable_disable_gradient(model.autoencoder, False)
+                   da_loss = criterion(da_output, da_targets)
+                   da_loss.backward(retain_graph=True)
+                   da_loss = da_loss.item()
+
+                   enable_disable_gradient(model.autoencoder, True)
+                   enable_disable_gradient(model.discriminator, False)
+                   enable_disable_gradient(model.backbone, False)
+
+                   enc_loss_0 = autoencoder_criterion(enc_output_0, images_source)
+                   enc_loss_1 = autoencoder_criterion(enc_output_1, images_target)
+                   enc_loss = enc_loss_0 + max(0, args.aada_m - enc_loss_1)
+                   enc_loss.backward(retain_graph=True)
+                   enc_loss = enc_loss.item()
+                   
+                   enable_disable_gradient(model.autoencoder, False)
+                   enable_disable_gradient(model.backbone, True)
+                   enc_loss_1.backward(retain_graph=True)
+
+                   enable_disable_gradient(model.autoencoder, True)
+                   enable_disable_gradient(model.discriminator, True)
+                   del da_output, da_images, enc_output_0, enc_output_1, images_source, images_target
+                
+                # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
+                epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
+                del loss, output, images, da_loss, enc_loss
                 #optimize the parameters
                 model_optimizer.step()
                 #optimize the parameters of the classifier
@@ -235,11 +277,39 @@ if __name__ == "__main__":
                     with torch.cuda.amp.autocast():
                         da_output = model(da_images, grl=True)
                         da_loss = criterion(da_output, da_targets)
-                        
                     scaler.scale((da_loss * args.grl_loss_weight)).backward()
                     del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) ) 
-                del loss, output, images, da_loss
+
+                if args.aada:
+                    enc_loss = 0
+                    with torch.cuda.amp.autocast():
+                        images_source = da_images[da_targets==0, :, :, :]
+                        images_target = da_images[da_targets==1, :, :, :]
+                        da_output, enc_output_0, enc_output_1 = model(da_images, aada=True, images_source=images_source, images_target=images_target)
+                        
+                        enable_disable_gradient(model.autoencoder, False)
+                        da_loss = criterion(da_output, da_targets)
+                        scaler.scale(da_loss).backward(retain_graph=True)
+
+                        enable_disable_gradient(model.autoencoder, True)
+                        enable_disable_gradient(model.discriminator, False)
+                        enable_disable_gradient(model.backbone, False)
+
+                        enc_loss_0 = autoencoder_criterion(enc_output_0, images_source)
+                        enc_loss_1 = autoencoder_criterion(enc_output_1, images_target)
+                        enc_loss = enc_loss_0 + max(0, args.aada_m - enc_loss_1)
+                        scaler.scale(enc_loss).backward(retain_graph=True)
+                        
+                        enable_disable_gradient(model.autoencoder, False)
+                        enable_disable_gradient(model.backbone, True)
+                        scaler.scale(enc_loss_1).backward(retain_graph=True)
+
+                        enable_disable_gradient(model.autoencoder, True)
+                        enable_disable_gradient(model.discriminator, True)
+                        del da_output, da_images, enc_output_0, enc_output_1, images_source, images_target
+
+                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) + enc_loss ) 
+                del loss, output, images, da_loss, enc_loss
                 scaler.step(model_optimizer)
                 scaler.step(classifiers_optimizers[current_group_num])
                 scaler.update()
