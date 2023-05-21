@@ -69,7 +69,7 @@ class GeoLocalizationNet(nn.Module):
 
 
     
-    def forward(self, x, grl=False, aada=False, images_source=None, images_target=None):
+    def forward(self, x, grl=False, aada=False, targets = None):
         features = self.backbone(x)
         if grl==True:
             # perform adaptation round
@@ -78,9 +78,11 @@ class GeoLocalizationNet(nn.Module):
         elif aada==True:
             # perform adaptation round
             # logits output dim is num_domains
-            output_sources = self.autoencoder(images_source)
-            output_targets = self.autoencoder(images_target)
-            return self.discriminator(features), output_sources, output_targets
+            features_sources = features[targets==0, :, :, :]
+            features_targets = features[targets==1, :, :, :]
+            ae_output_sources = self.autoencoder(features_sources)
+            ae_output_targets = self.autoencoder(features_targets)
+            return features_sources, features_targets, ae_output_sources, ae_output_targets
         return self.aggregation(features)
 
 

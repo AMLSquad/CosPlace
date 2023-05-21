@@ -81,23 +81,12 @@ class TrainDataset(torch.utils.data.Dataset):
         class_id = self.classes_ids[class_num]
         # Pick a random image among those in this class.
         image_path = random.choice(self.images_per_class[class_id])
-        if self.base_preprocessing:
-            if random.random() < 0.5:
-                #apply preprocessing with a probability of 0.5
-                pil_image = apply_post_processing(image_path, False)
-            else:
-                pil_image = open_image(image_path)
-        else:
-            try:
-                pil_image = open_image(image_path)
-            except Exception as e:
-                logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
-                raise e
         
+        pil_image = open_image(image_path)
+    
         filename = os.path.basename(image_path)
         da_label = 1 if filename.startswith("night") else 0
-        if self.preprocessing and da_label:
-            pil_image = apply_post_processing(image_path)
+        
         
         
         

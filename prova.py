@@ -1,15 +1,13 @@
 import torch
 
-import torch.nn as nn
-import torch.nn.functional as F
-
-new_tensor = torch.tensor([0])
-
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+a.grad = torch.tensor(1.0)
 
 
-
-torch.save(new_tensor, "soups_output/face_soup/prova.pth")
-
+c = a * b
+c.backward(retain_graph=True)
+c.backward()
 
 
 

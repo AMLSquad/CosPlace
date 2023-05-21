@@ -1,90 +1,97 @@
-
-# class AutoEncoder(nn.Module):
-#     def __init__(self):
-#         super(AutoEncoder, self).__init__()
-        
-#         # Definisci l'encoder
-#         # Cambia i parametri di input e output dei layer
-#         self.encoder_16 = nn.Sequential(
-#             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-#             nn.ReLU(True),
-#             nn.MaxPool2d(kernel_size=2, stride=2),
-#             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-#             nn.ReLU(True),
-#             nn.MaxPool2d(kernel_size=2, stride=2),
-#         )
-        
-#         # Decoder
-#         self.decoder_16 = nn.Sequential(
-#             nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
-#             nn.ReLU(True),
-#             nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2),
-#             nn.Sigmoid()
-#         )
-
-#         # Encoder
-#         self.encoder_8 = nn.Sequential(
-#             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-#             nn.ReLU(True),
-#             nn.MaxPool2d(kernel_size=2, stride=2),
-#             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-#             nn.ReLU(True),
-#             nn.MaxPool2d(kernel_size=2, stride=2),
-#         )
-        
-#         # Decoder
-#         self.decoder_8 = nn.Sequential(
-#             nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
-#             nn.ReLU(True),
-#             nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2),
-#             nn.Sigmoid()
-#         )
-
-#     def forward(self, x):
-#         print(x.shape)
-#         if x.shape[0] == 8:
-#             encoded = self.encoder_8(x)
-#             decoded = self.decoder_8(encoded)
-#             return decoded
-#         else:
-#             encoded = self.encoder_16(x)
-#             decoded = self.decoder_16(encoded)
-#             return decoded
-
 import torch
 import torch.nn as nn
 
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
-        
-        # Definisci l'encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 128, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU()
         )
-        
-        # Definisci il decoder
+        self.encoder_weights_grads = None
+        self.encoder_bias_grads = None
+
+            # Definisci il decoder
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2),
-            nn.ReLU(True)
-        )
+                nn.ConvTranspose2d(64, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+                nn.ReLU(),
+                nn.ConvTranspose2d(128, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+                nn.ReLU(),
+                nn.ConvTranspose2d(256, 512, kernel_size=3, stride=2, padding=1, output_padding=1),
+                nn.ReLU()
+            )  
+        self.decoder_weights_grads = None
+        self.decoder_bias_grads = None
+        
+        for module in self.encoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                module.weight.requires_grad = True
+                if module.bias is not None:
+                    module.bias.requires_grad = True
+        for module in self.decoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                module.weight.requires_grad = True
+                if module.bias is not None:
+                    module.bias.requires_grad = True
+         
+          
+    def take_grad(self):
+        encoder_weigths_grads = []
+        encoder_bias_grads =  []
+        for module in self.encoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                encoder_weigths_grads.append(module.weight.grad.detach())
+                module.weight.zero_()
+                if module.bias is not None:
+                    encoder_bias_grads.append(module.bias.grad.detach())
+                    module.bias.zero_()
+
+        decoder__weigths_grads = []
+        decoder_bias_grads =  []
+        for module in self.decoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                decoder__weigths_grads.append(module.weight.grad.detach())
+                module.weight.zero_()
+
+                if module.bias is not None:
+                    decoder_bias_grads.append(module.bias.grad.detach())
+                    module.bias.zero_()
+
+        self.encoder_weights_grads = encoder_weigths_grads
+        self.encoder_bias_grads = encoder_bias_grads
+        self.decoder_weights_grads = decoder__weigths_grads
+        self.decoder_bias_grads = decoder_bias_grads
+
+    def add_grad(self):
+        w = 0
+        b = 0
+        for module in self.encoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                module.weight.grad = self.encoder_weights_grads[w]
+                w = w + 1
+                if module.bias is not None:
+                    module.bias.grad = self.encoder_bias_grads[b]
+                    b = b + 1
+
+        w = 0
+        b = 0
+        for module in self.decoder.modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
+                module.weight.grad = self.decoder_weights_grads[w]
+                w = w + 1
+                if module.bias is not None:
+                    module.bias.grad = self.decoder_bias_grads[b]
+                    
+
+       
     
     def forward(self, x):
+        
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return decoded
 
-# Crea un'istanza del tuo autoencoder
-autoencoder = Autoencoder()
