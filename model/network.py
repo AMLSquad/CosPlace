@@ -7,7 +7,7 @@ import copy
 from torch.autograd import Function
 from model.layers import Flatten, L2Norm, GeM
 import os
-import model.autoencoder as ae
+from model.autoencoder import Autoencoder
 
 CHANNELS_NUM_IN_LAST_CONV = {
     "resnet18": 512,
@@ -63,10 +63,36 @@ class GeoLocalizationNet(nn.Module):
             )
         # Domain adaptation
         self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
-        self.autoencoder = ae.Autoencoder() if aada == True else None
+        self.autoencoder = Autoencoder() if aada == True else None
+        self.backbone_grad_layer_3 = []
+        self.backbone_grad_layer_4 = []
         
+        
+    def save_bb_grad(self):
+        self.backbone_grad_layer_3 = []
+        self.backbone_grad_layer_4 = []
+        for name, child in self.backbone.named_children():
+            if name == "6":  # Freeze layers before conv_3
+                for params in child.parameters():
+                    self.backbone_grad_layer_3.append(params.grad.clone())
+            if name == "7":  # Freeze layers before conv_3
+                for params in child.parameters():
+                    self.backbone_grad_layer_4.append(params.grad.clone())
+                
+    
+    def load_bb_grad(self):
+        for name, child in self.backbone.named_children():
+            if name == "6":  # Freeze layers before conv_3
+                for idx,params in enumerate(child.parameters()):
+                    params.grad = self.backbone_grad_layer_3[idx]
+            if name == "7":  # Freeze layers before conv_3
+                for idx,params in enumerate(child.parameters()):
+                    params.grad = self.backbone_grad_layer_4[idx]
         
 
+                    
+
+            
 
     
     def forward(self, x, grl=False, aada=False, targets = None):

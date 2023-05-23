@@ -24,14 +24,21 @@ if __name__ == "__main__":
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-    def enable_disable_gradient(model_component, flag, backbone=False):
-        if backbone:
-            for name, child in model_component.named_children():
-                if name == "layer3":  # (Un)Freeze only layer 3
-                    for params in child.parameters():
-                        params.requires_grad = flag
-        else:
-            model_component.requires_grad_(flag)
+    def print_ae_grad():
+        print(model.autoencoder.encoder[0].weight.grad[0][0][0][0] if (model.autoencoder.encoder[0].weight.grad != None) else None)
+    
+    def print_bb_grad():
+        for name, child in model.backbone.named_children():
+            if name == "6":
+                for w in child.parameters():
+                    print("Backbone grad layer 3")
+                    print(w.grad[0][0][0])
+                    break
+            if name == "6":
+                for w in child.parameters():
+                    print("Backbone grad layer 4")
+                    print(w.grad[0][0][0])  
+                    break
 
     
     args = parser.parse_arguments()
@@ -209,15 +216,7 @@ if __name__ == "__main__":
             model_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()
 
-            if args.aada:
-                    #CE loss pass
-                    print("CE loss pass")
-                    print("AE grad - should be 0")
-                    print(model.autoencoder.encoder[0].weight.grad)
-                    print("Backbone grad - should be not 0")
-                    print(model.backbone[0].weight.grad)
-                    enable_disable_gradient(model.backbone, True)
-                    enable_disable_gradient(model.autoencoder, False)
+            
             
             if not args.use_amp16:
 
@@ -232,7 +231,20 @@ if __name__ == "__main__":
                     loss = criterion(output)
                 else:
                     loss = criterion(output, targets)
-                loss.backward()
+                #loss.backward()
+
+
+                if args.aada:
+                    #CE loss pass
+                    if False:
+                        print()
+                        print("CE loss pass")
+                        print("AE grad - should be 0")
+                        
+                        print_ae_grad()
+                        print("Backbone grad - should be not 0")
+                        print_bb_grad()
+                                                   
                 #append the loss to the epoch losses
 
                 
@@ -247,44 +259,48 @@ if __name__ == "__main__":
 
                 if args.aada:
                     """
-                    python train.py --dataset_folder small --groups_num 1 --epochs_num 3 --device cpu 
-                     --target_dataset_folder tokyo-night --pseudo_target_folder small_night 
-                     --aada True
+                    python train.py --dataset_folder small --groups_num 1 --epochs_num 3 --device cpu --target_dataset_folder tokyo-night --pseudo_target_folder small_night --aada True
                     """
                 
 
-                    
                     features_0, features_1, enc_output_0, enc_output_1 = model(da_images, aada=True, targets = da_targets)
-                    
+                    enc_loss_0 = autoencoder_criterion(enc_output_0, features_0)
+                    enc_loss_1 = autoencoder_criterion(enc_output_1, features_1)
                     
                     
 
                     
 
                     #aada on backbone loss pass
-                    enable_disable_gradient(model.autoencoder, False)
-                    enable_disable_gradient(model.backbone, True)
-                    (enc_loss_1).backward()
-                    print("Backbone loss pass")
-                    print("AE grad - should be unchanged")
-                    print(model.autoencoder.encoder[0].weight.grad)
-                    print("Backbone grad - should be changed")
-                    print(model.backbone.weight[0].grad)
-
+                    
+                    (enc_loss_0).backward(retain_graph=True)
+                    model.save_bb_grad()
+                    model.autoencoder.encoder.zero_grad()
+                    model.autoencoder.decoder.zero_grad()
+                    if False:
+                        print()
+                        print("Backbone target features loss pass")
+                        print("AE grad - should be 0")
+                        print_ae_grad()
+                        print("Backbone grad - should be changed")
+                        print_bb_grad()
                     #aada on autoencoder loss pass
-                    enable_disable_gradient(model.autoencoder, True)
-                    enable_disable_gradient(model.backbone, False)
-                    enc_loss_0 = autoencoder_criterion(enc_output_0, features_0)
-                    enc_loss_1 = autoencoder_criterion(enc_output_1, features_1)
-                    enc_loss = enc_loss_0 + max(0, args.aada_m - enc_loss_1)
+
+                  
+                    
+                    enc_loss = enc_loss_0 + torch.max(torch.zero_(enc_loss_1), args.aada_m - enc_loss_1)
                     (enc_loss).backward()
-                    print("AE loss pass")
-                    print("AE grad - should be not 0")
-                    print(model.autoencoder.encoder[0].weight.grad)
-                    print("Backbone grad - should be unchanged")
-                    print(model.backbone[0].weight.grad)
-                    enable_disable_gradient(model.autoencoder, True)
-                    exit()
+                    model.backbone.zero_grad()
+                    model.load_bb_grad()
+                    if False:
+                        print()
+                        print("AE loss pass")
+                        print("AE grad - should be not 0")
+                        print_ae_grad()
+                        print("Backbone grad - should be unchanged")
+                        print_bb_grad()
+                        print()
+                        exit()
                 
                 # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
@@ -317,8 +333,6 @@ if __name__ == "__main__":
                         
                         
                         #CE loss pass
-                        enable_disable_gradient(model.backbone, True)
-                        enable_disable_gradient(model.autoencoder, False)
                         da_loss = criterion(da_output, da_targets)
                         scaler.scale(da_loss).backward(retain_graph=True)
                         print("CE loss pass")
@@ -328,8 +342,6 @@ if __name__ == "__main__":
                         print(model.backbone.weight.grad)
 
                         #AE loss pass
-                        enable_disable_gradient(model.autoencoder, True)
-                        enable_disable_gradient(model.backbone, False)
                         enc_loss_0 = autoencoder_criterion(enc_output_0, images_source)
                         enc_loss_1 = autoencoder_criterion(enc_output_1, images_target)
                         enc_loss = enc_loss_0 + max(0, args.aada_m - enc_loss_1)
@@ -341,8 +353,6 @@ if __name__ == "__main__":
                         print(model.backbone.weight.grad)
 
 
-                        enable_disable_gradient(model.autoencoder, False)
-                        enable_disable_gradient(model.backbone, True)
                         scaler.scale(enc_loss_1).backward(retain_graph=True)
                         print("AE loss pass")
                         print("AE grad - should be unchanged")
@@ -351,7 +361,6 @@ if __name__ == "__main__":
                         print(model.backbone.weight.grad)
 
 
-                        enable_disable_gradient(model.autoencoder, True)
                         del da_output, da_images, enc_output_0, enc_output_1, images_source, images_target
 
                 epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) + enc_loss ) 
