@@ -34,7 +34,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
                 all_descriptors[indices.numpy(), :] = descriptors
                 db_descriptors = descriptors
         else:
-            db_descriptors = db_descriptors.cpu().numpy()
+            db_descriptors = db_descriptors
             all_descriptors[indices.numpy(), :] = db_descriptors
         
         

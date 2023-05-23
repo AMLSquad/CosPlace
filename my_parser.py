@@ -78,7 +78,8 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--backbone_path", type=str, default=None)
 
     parser.add_argument("--aada", type=bool, default=False)
-    parser.add_argument("--aada_m", type=int, default=5)
+    parser.add_argument("--aada_m", type=int, default=0.5)
+    parser.add_argument("--aada_loss_weight", type=int, default=0.01)
     args = parser.parse_args()
     
     

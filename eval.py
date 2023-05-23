@@ -14,6 +14,8 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
+    autoencoder_layer = ["autoencoder.encoder.0.weight", "autoencoder.encoder.0.bias", "autoencoder.encoder.2.weight", "autoencoder.encoder.2.bias", "autoencoder.encoder.4.weight", "autoencoder.encoder.4.bias", "autoencoder.decoder.0.weight", "autoencoder.decoder.0.bias", "autoencoder.decoder.2.weight", "autoencoder.decoder.2.bias", "autoencoder.decoder.4.weight", "autoencoder.decoder.4.bias"]
+
     args = parser.parse_arguments(is_training=False)
     start_time = datetime.now()
     output_folder = f"logs/{args.save_dir}/{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
@@ -37,6 +39,12 @@ if __name__ == "__main__":
             del model_state_dict["discriminator.3.bias"]
             del model_state_dict["discriminator.5.weight"]
             del model_state_dict["discriminator.5.bias"]
+        if args.aada:
+            for l in autoencoder_layer:
+                del model_state_dict[l]
+
+
+
         model.load_state_dict(model_state_dict)
     else:
         logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +
