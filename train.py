@@ -410,13 +410,13 @@ if __name__ == "__main__":
     
     
 
-    recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, test_ds, model)
+    recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
 
     
     
     
-    recalls, recalls_str,_ = test.test(args, test_ds, model, descriptors = tokyo_xs_db_descriptors)
+    recalls, recalls_str,_ = test.test(args, tokyo_night_test_ds, model, descriptors = tokyo_xs_db_descriptors)
     logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
