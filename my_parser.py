@@ -80,6 +80,9 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--aada", type=bool, default=False)
     parser.add_argument("--aada_m", type=float, default=0.5)
     parser.add_argument("--aada_loss_weight", type=float, default=0.01)
+
+    parser.add_argument("--tokyo_xs_dataset_folder", type=str, default="tokyo_xs")
+
     args = parser.parse_args()
     
     
