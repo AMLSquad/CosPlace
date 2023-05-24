@@ -199,6 +199,12 @@ Here is the bibtex to cite our paper
     <td>53.3 / 76.2 / 83.8</td> 
   </tr>
   <tr>
+    <td>DA</td>
+    <td>52.7 / 68.0 / 73.0</td>
+    <td>71.7 / 86.7 / 91.1,</td>
+    <td>56.2 / 78.1 / 84.8</td> 
+  </tr>
+  <tr>
     <td>FDA+PP</td>
     <td>51.0 / 65.9 / 71.0</td>
     <td>69.8 / 84.1 / 88.6</td>
@@ -223,11 +229,6 @@ Here is the bibtex to cite our paper
     <td>56.2 / 71.4 / 81.0</td> 
   </tr>
   <tr>
-    <td>DA</td>
-    <td>52.7 / 68.0 / 73.0</td>
-    <td>71.7 / 86.7 / 91.1,</td>
-    <td>56.2 / 78.1 / 84.8</td> 
-  </tr><tr>
     <td>FDA+PP+DA (alpha = 0.01)</td>
     <td>50.4 / 63.9 / 69.0</td>
     <td>71.4 / 86.0 / 89.8</td>
