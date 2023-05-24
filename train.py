@@ -113,11 +113,11 @@ if __name__ == "__main__":
     test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
     
-    tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
-                        positive_dist_threshold=args.positive_dist_threshold)
+    #tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
+     #                   positive_dist_threshold=args.positive_dist_threshold)
     
-    tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
-                        positive_dist_threshold=args.positive_dist_threshold)
+    #tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
+    #                    positive_dist_threshold=args.positive_dist_threshold)
 
     logging.info(f"Validation set: {val_ds}")
     logging.info(f"Test set: {test_ds}")
@@ -409,7 +409,7 @@ if __name__ == "__main__":
 
     
     
-
+"""
     recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
 
@@ -420,3 +420,4 @@ if __name__ == "__main__":
     logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
+"""
