@@ -185,7 +185,6 @@ Here is the bibtex to cite our paper
     <td>71.7 / 84.4 / 87.9</td>
     <td>56.2 / 70.5 / 77.1</td> 
   </tr>
-  
   <tr>
     <td>FDA+PP+DA (alpha = 0.1)</td>
     <td>50.9 / 63.4 / 69.1</td>
@@ -197,7 +196,7 @@ Here is the bibtex to cite our paper
     <td>52.8 / 66.0 / 71.0</td>
     <td>73.0 / 86.3 / 91.1</td>
     <td>53.3 / 76.2 / 83.8</td> 
-  </tr> 
+  </tr>  
   <tr>
     <td>DA</td>
     <td>52.7 / 68.0 / 73.0</td>
