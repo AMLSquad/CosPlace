@@ -195,7 +195,7 @@ Here is the bibtex to cite our paper
   <tr>
     <td>AE</td>
     <td>52.8 / 66.0 / 71.0</td>
-    <td>73.0 / 86.3 /91.1</td>
+    <td>73.0 / 86.3 / 91.1</td>
     <td>53.3 / 76.2 / 83.8</td> 
   </tr>
   <tr>
