@@ -115,6 +115,9 @@ if __name__ == "__main__":
     
     tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
+    
+    tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
+                        positive_dist_threshold=args.positive_dist_threshold)
 
     logging.info(f"Validation set: {val_ds}")
     logging.info(f"Test set: {test_ds}")
@@ -411,8 +414,7 @@ if __name__ == "__main__":
     logging.info(f"{test_ds}: {recalls_str}")
 
     
-    tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
-                        positive_dist_threshold=args.positive_dist_threshold)
+    
     
     recalls, recalls_str,_ = test.test(args, test_ds, model, descriptors = tokyo_xs_db_descriptors)
     logging.info(f"{test_ds}: {recalls_str}")
