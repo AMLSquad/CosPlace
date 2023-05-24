@@ -193,6 +193,12 @@ Here is the bibtex to cite our paper
     <td>61.0 / 81.0 / 83.8</td> 
   </tr>
   <tr>
+    <td>AE</td>
+    <td>52.8 / 66.0 / 71.0</td>
+    <td>73.0 / 86.3 /91.1</td>
+    <td>53.3 / 76.2 / 87.6</td> 
+  </tr>
+  <tr>
     <td>FDA+PP</td>
     <td>51.0 / 65.9 / 71.0</td>
     <td>69.8 / 84.1 / 88.6</td>
