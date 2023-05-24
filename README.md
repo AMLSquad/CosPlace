@@ -300,10 +300,4 @@ Here is the bibtex to cite our paper
     <td>  70.8 / 84.1 / 88.9 </td>
     <td>  55.2 / 75.2 / 81.9 </td> 
   </tr>
-  
-  
-
-
-
-
 </table>
