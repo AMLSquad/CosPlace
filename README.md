@@ -201,7 +201,7 @@ Here is the bibtex to cite our paper
   <tr>
     <td>DA</td>
     <td>52.7 / 68.0 / 73.0</td>
-    <td>71.7 / 86.7 / 91.1,</td>
+    <td>71.7 / 86.7 / 91.1</td>
     <td>56.2 / 78.1 / 84.8</td> 
   </tr>
   <tr>
