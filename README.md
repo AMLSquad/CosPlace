@@ -205,13 +205,19 @@ Here is the bibtex to cite our paper
     <td>56.2 / 78.1 / 84.8</td> 
   </tr>
   <tr>
-    <td>AE</td>
+    <td>AE (m = 0.5 gamma = 0.01)</td>
     <td>52.8 / 66.0 / 71.0</td>
     <td>73.0 / 86.3 / 91.1</td>
     <td>53.3 / 76.2 / 83.8</td> 
   </tr>  
   <tr>
-    <td>AE (m = 5)</td>
+    <td>AE (m = 2 gamma = 0.01)</td>
+    <td>52.8 / 66.0 / 71.0</td>
+    <td>73.0 / 86.3 / 91.1</td>
+    <td>53.3 / 76.2 / 83.8</td> 
+  </tr>
+  <tr>
+    <td>AE (m = 5 gamma = 0.01)</td>
     <td>51.0 / 64.5 / 69.7,</td>
     <td>70.2 / 84.4 / 88.9,</td>
     <td>57.1 / 74.3 / 84.8</td> 
