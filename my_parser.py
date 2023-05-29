@@ -84,6 +84,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--tokyo_xs_dataset_folder", type=str, default="tokyo_xs/test")
 
     parser.add_argument("--test_all", type=bool, default=False)
+    parser.add_argument("--pseudo_da", type=bool, default=False)
     args = parser.parse_args()
     
     
