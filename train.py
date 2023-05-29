@@ -321,7 +321,6 @@ if __name__ == "__main__":
                         print("Backbone grad - should be unchanged")
                         print_bb_grad()
                         print()
-                exit()
                 # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
                 del loss, output, images, da_loss, enc_loss
