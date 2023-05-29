@@ -58,7 +58,7 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with images from the target for DA sets")
     parser.add_argument("--domain_adaptation", type=bool, default=False)
     parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")
-    parser.add_argument("--pseudo_target_folder", type=str, default="")
+    parser.add_argument("--pseudo_target_folder", type=str, default=None)
     parser.add_argument("--test_queries_folder", type=str, default="queries_v1")
     parser.add_argument("--experiment_name",type=str,default="")
     parser.add_argument("--loss",type=str, default="cosface")
@@ -84,7 +84,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--tokyo_xs_dataset_folder", type=str, default="tokyo_xs/test")
 
     parser.add_argument("--test_all", type=bool, default=False)
-    parser.add_argument("--pseudo_da", type=bool, default=False)
+    parser.add_argument("--pseudo_da", type=bool, default=True)
     args = parser.parse_args()
     
     

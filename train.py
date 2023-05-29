@@ -42,14 +42,6 @@ if __name__ == "__main__":
                     print(w.grad[0][0][0])  
                     break
 
-        for name,child in model.aggregation.named_children():
-            if name == "1":
-                for w in child.parameters():
-                    print(w.grad[0])
-            if name == "3":
-                for w in child.parameters():
-                    print(w.grad[0])
-
 
     
     args = parser.parse_arguments()
@@ -94,14 +86,17 @@ if __name__ == "__main__":
     model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
 
 
-        
 
     #### Datasets
     # Each group is treated as a different dataset
     groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
-
     
+    if args.pseudo_target_folder:
+        pseudo_groups = [TrainDataset(args, args.pseudo_target_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
+                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing,
+                        pseudo_target=True
+                        ) for n in range(args.groups_num)]
 
     # Each group has its own classifier, which depends on the number of classes in the group
     if args.loss == "cosface": 
@@ -206,12 +201,31 @@ if __name__ == "__main__":
         classifiers[current_group_num] = classifiers[current_group_num].to(args.device)
         util.move_to_device(classifiers_optimizers[current_group_num], args.device)
         # setup the dataloader
-        dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
-                                                batch_size=args.batch_size, shuffle=True,
-                                                pin_memory=(args.device == "cuda"), drop_last=True)
+        batch_size = args.batch_size
+        if args.pseudo_target_folder:
+            batch_size = int(batch_size / 2)
         
+        
+
+        dataloader = commons.InfiniteDataLoader(groups[current_group_num],
+                                                pseudo_dataset = pseudo_groups[current_group_num] if args.pseudo_target_folder else None,
+                                                 num_workers=args.num_workers,
+                                                batch_size=batch_size, shuffle=True,
+                                                pin_memory=(args.device == "cuda"), drop_last=True,
+                                                )
+        
+       
+
+
         if args.domain_adaptation or args.aada:
-            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,pseudo=args.pseudo_da, num_workers=args.num_workers, 
+
+            
+
+            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,
+                                                       pseudo_dataset= 
+                                                       pseudo_groups[current_group_num] if args.pseudo_target_folder else None,
+                                                       
+                                                       pseudo=args.pseudo_da, num_workers=args.num_workers, 
                                                         batch_size = 16, shuffle=True,
                                                         pin_memory=(args.device == "cuda"), drop_last=True)
             
@@ -221,14 +235,13 @@ if __name__ == "__main__":
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
         for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
-            images, targets, _, _ = next(dataloader_iterator)
-            
+            images, targets = next(dataloader_iterator)
+
             images, targets = images.to(args.device), targets.to(args.device)
             
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
-            
 
             if args.augmentation_device == "cuda":
                 images = gpu_augmentation(images)
@@ -321,6 +334,7 @@ if __name__ == "__main__":
                         print("Backbone grad - should be unchanged")
                         print_bb_grad()
                         print()
+
                 # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
                 del loss, output, images, da_loss, enc_loss
@@ -381,7 +395,6 @@ if __name__ == "__main__":
 
 
                         del da_output, da_images, enc_output_source, enc_output_target, images_source, images_target
-
                 epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) + enc_loss ) 
                 del loss, output, images, da_loss, enc_loss
                 scaler.step(model_optimizer)

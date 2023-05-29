@@ -20,7 +20,7 @@ def open_image(path):
 
 class TrainDataset(torch.utils.data.Dataset):
     def __init__(self, args, dataset_folder, M=10, alpha=30, N=5, L=2,
-                 current_group=0, min_images_per_class=10, preprocessing=False, base_preprocessing = False):
+                 current_group=0, min_images_per_class=10, preprocessing=False, base_preprocessing = False, pseudo_target = False):
         """
         Parameters (please check our paper for a clearer explanation of the parameters).
         ----------
@@ -43,13 +43,19 @@ class TrainDataset(torch.utils.data.Dataset):
         self.augmentation_device = args.augmentation_device
         self.preprocessing = preprocessing
         self.base_preprocessing = base_preprocessing
+        self.pseudo_target = pseudo_target
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
         dataset_name = os.path.basename(args.dataset_folder)
         filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch" 
+        
+        if pseudo_target:
+            filename = f"cache/pseudo_{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch" 
+
+
         if not os.path.exists(filename): #se il filename non esiste
             os.makedirs("cache", exist_ok=True) #crea la cartella cache
             logging.info(f"Cached dataset {filename} does not exist, I'll create it now.")
-            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, args.pseudo_target_folder) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
+            self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename) #divides the images by class, and gets the list of classes that belong to the same group, saves them into the filename
         elif current_group == 0:
             logging.info(f"Using cached dataset {filename}") #If a cache file is already been built
         
@@ -77,28 +83,17 @@ class TrainDataset(torch.utils.data.Dataset):
     def __getitem__(self, class_num):
         # This function takes as input the class_num instead of the index of
         # the image. This way each class is equally represented during training.
-        
         class_id = self.classes_ids[class_num]
         # Pick a random image among those in this class.
         image_path = random.choice(self.images_per_class[class_id])
-        
-        pil_image = open_image(image_path)
-    
-        filename = os.path.basename(image_path)
-        da_label = 1 if filename.startswith("night") else 0
-        
-        
-        
-        
+        pil_image = open_image(image_path)    
         tensor_image = T.functional.to_tensor(pil_image)
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
             f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."
         
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)
-        
-
-        return tensor_image, class_num, image_path, da_label
+        return tensor_image, class_num, 1 if self.pseudo_target else 0
     
     def get_images_num(self):
         """Return the number of images within this group."""
@@ -109,7 +104,7 @@ class TrainDataset(torch.utils.data.Dataset):
         return len(self.classes_ids)
     
     @staticmethod
-    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename, pseudo_target_folder):
+    def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename):
         logging.debug(f"Searching training images in {dataset_folder}")
         
         images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))
@@ -119,9 +114,7 @@ class TrainDataset(torch.utils.data.Dataset):
         logging.debug(f"Found {len(images_paths)} images")
 
         #Do the same for synthetic night images
-        if pseudo_target_folder:
-            images_paths += sorted(glob(f"{pseudo_target_folder}/**/*.jpg", recursive=True))
-            logging.debug(f"Pseudo target images found in {pseudo_target_folder} and added. Now there are {len(images_paths)} images")
+
             #logging.debug(f"Found {len(images_paths)} images")
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")

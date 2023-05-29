@@ -9,9 +9,18 @@ import numpy as np
 
 
 class InfiniteDataLoader(torch.utils.data.DataLoader):
-    def __init__(self, *args, **kwargs):
+    def __init__(self,  *args, **kwargs):
+        pseudo_dataset = None
+        if kwargs["pseudo_dataset"]:
+            pseudo_dataset = kwargs["pseudo_dataset"]
+        del kwargs["pseudo_dataset"]
         super().__init__(*args, **kwargs)
         self.dataset_iterator = super().__iter__()
+        
+
+        if pseudo_dataset is not None:
+            self.pseudo_dataset_loader = torch.utils.data.DataLoader(pseudo_dataset, **kwargs)
+            self.pseudo_dataset_iterator = self.pseudo_dataset_loader.__iter__()
     
     def __iter__(self):
         return self
@@ -22,7 +31,17 @@ class InfiniteDataLoader(torch.utils.data.DataLoader):
         except StopIteration:
             self.dataset_iterator = super().__iter__()
             batch = next(self.dataset_iterator)
-        return batch
+        
+        if  hasattr(self, 'pseudo_dataset_loader'):
+            try:
+                pseudo_batch = next(self.pseudo_dataset_iterator)
+            except StopIteration:
+                self.pseudo_dataset_iterator = self.pseudo_dataset_loader.__iter__()
+                pseudo_batch = next(self.pseudo_dataset_iterator)
+
+            batch = torch.cat([batch[0], pseudo_batch[0]], 0), torch.cat([batch[1], pseudo_batch[1]],0)
+
+        return batch[0], batch[1]
 
 
 def make_deterministic(seed: int = 0):

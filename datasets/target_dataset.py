@@ -38,15 +38,21 @@ class TargetDataset(data.Dataset):
 
 
 class DomainAdaptationDataLoader(data.DataLoader):
-    def __init__(self, source_pseudo_dataset, target_dataset, pseudo = False, *args, **kwargs, ):
-        
+    def __init__(self, source_dataset, target_dataset, pseudo_dataset = None, pseudo = True, *args, **kwargs, ):
+        if pseudo and pseudo_dataset:
+            print("Pseudo images in DA module")
         self.source_dim = int(kwargs["batch_size"] * 1 / 2)
         
-        self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo else 0
+        self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo and pseudo_dataset else 0
         self.target_dim = kwargs["batch_size"] - self.source_dim - self.pseudo_dim
         del kwargs["batch_size"]
-        self.source_domain_loader = data.DataLoader(source_pseudo_dataset, batch_size=self.source_dim + int(self.pseudo_dim * 2.5)  , **kwargs)
+        self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim , **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
+
+        if pseudo_dataset:
+            self.pseudo_domain_loader = data.DataLoader(pseudo_dataset, batch_size=self.pseudo_dim , **kwargs)
+            self.pseudo_domain_iterator = self.pseudo_domain_loader.__iter__()
+
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
         
@@ -56,25 +62,30 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def  __next__(self):
         
         try:
-            all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
-            source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
-            source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
-            pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
-            pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
+            source_images,_,source_domain_labels = next(self.source_domain_iterator)
+            
 
         except StopIteration:
             
             self.source_domain_iterator = self.source_domain_loader.__iter__()
-            all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
-            source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
-            source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
-            pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
-            pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
+            source_images,_,source_domain_labels = next(self.source_domain_iterator)
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
-        except:
+        except StopIteration:
             self.target_domain_iterator = self.target_domain_loader.__iter__()
             target_images,target_domain_labels = next(self.target_domain_iterator)
-        batch = (torch.cat((source_images,pseudo_images,target_images),0),torch.cat((source_domain_labels, pseudo_domain_labels, target_domain_labels),0))
+
+        if hasattr(self,'pseudo_domain_loader'):
+            try:
+                pseudo_images, _, pseudo_domain_labels = next(self.pseudo_domain_iterator)
+            except StopIteration:
+                self.pseudo_domain_iterator = self.pseudo_domain_loader.__iter__()
+                pseudo_images, _, pseudo_domain_labels = next(self.pseudo_domain_iterator)
+            batch = (torch.cat((source_images,pseudo_images,target_images),0),torch.cat((source_domain_labels, pseudo_domain_labels, target_domain_labels),0))
+
+        else:
+            batch = (torch.cat((source_images,target_images),0),torch.cat((source_domain_labels, target_domain_labels),0))
+ 
+
         return batch
 
