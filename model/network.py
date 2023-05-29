@@ -33,9 +33,11 @@ class GradientReversal(torch.nn.Module):
     def __init__(self):
         super().__init__()
     def forward(self, x):
+
         x = torch.nn.functional.adaptive_avg_pool2d(x, (1,1))
         x = x.view(x.shape[0], -1)
-        return GradientReversalFunction.apply(x)
+        x = GradientReversalFunction.apply(x)
+        return x
 
 def get_discriminator(input_dim, num_classes=2):
     discriminator = nn.Sequential(
@@ -66,11 +68,15 @@ class GeoLocalizationNet(nn.Module):
         self.autoencoder = Autoencoder(features_dim) if aada == True else None
         self.backbone_grad_layer_3 = []
         self.backbone_grad_layer_4 = []
+        self.aggregation_grad = []
         
         
     def save_bb_grad(self):
         self.backbone_grad_layer_3 = []
         self.backbone_grad_layer_4 = []
+        self.aggregation_grad = []
+
+
         for name, child in self.backbone.named_children():
             if name == "6":  # Freeze layers before conv_3
                 for params in child.parameters():
@@ -78,6 +84,16 @@ class GeoLocalizationNet(nn.Module):
             if name == "7":  # Freeze layers before conv_3
                 for params in child.parameters():
                     self.backbone_grad_layer_4.append(params.grad.clone())
+        for name,child in self.aggregation.named_children():
+            if name == "1":
+                for params in child.parameters():
+                    self.aggregation_grad.append(params.grad.clone())
+            if name == "3":
+                for params in child.parameters():
+                    self.aggregation_grad.append(params.grad.clone())
+
+
+        
                 
     
     def load_bb_grad(self):
@@ -88,6 +104,19 @@ class GeoLocalizationNet(nn.Module):
             if name == "7":  # Freeze layers before conv_3
                 for idx,params in enumerate(child.parameters()):
                     params.grad = self.backbone_grad_layer_4[idx]
+
+        idx = 0
+        for name,child in self.aggregation.named_children():
+            if name == "1":
+                for params in child.parameters():
+                    
+                    params.grad = self.aggregation_grad[idx]
+                    idx = idx + 1
+            if name == "3":
+                for params in child.parameters():
+                    params.grad = self.aggregation_grad[idx]
+                    idx = idx + 1
+
         
 
                     
@@ -100,18 +129,22 @@ class GeoLocalizationNet(nn.Module):
         if grl==True:
             # perform adaptation round
             # logits output dim is num_domains
-            return self.discriminator(features)
+            x =  self.discriminator(features)
+            return x
         elif aada==True:
+            features = self.aggregation(features)
             # perform adaptation round
             # logits output dim is num_domains
             if aada_linear:
-                features = torch.nn.functional.adaptive_avg_pool2d(features, (1,1))
-                features = features.view(features.shape[0], -1)
+
+                #features = torch.nn.functional.adaptive_avg_pool2d(features, (1,1))
+                #features = features.view(features.shape[0], -1)
                 features_sources = features[targets==0]
                 features_targets = features[targets==1]
             else:
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
+            
             ae_output_sources = self.autoencoder(features_sources)
             ae_output_targets = self.autoencoder(features_targets)
             return features_sources, features_targets, ae_output_sources, ae_output_targets

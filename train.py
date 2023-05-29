@@ -24,6 +24,8 @@ if __name__ == "__main__":
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
+    debug = False
+
     def print_ae_grad():
         print(model.autoencoder.encoder[0].weight.grad if (model.autoencoder.encoder[0].weight.grad != None) else None)
     
@@ -39,6 +41,15 @@ if __name__ == "__main__":
                     print("Backbone grad layer 4")
                     print(w.grad[0][0][0])  
                     break
+
+        for name,child in model.aggregation.named_children():
+            if name == "1":
+                for w in child.parameters():
+                    print(w.grad[0])
+            if name == "3":
+                for w in child.parameters():
+                    print(w.grad[0])
+
 
     
     args = parser.parse_arguments()
@@ -244,7 +255,7 @@ if __name__ == "__main__":
 
                 if args.aada:
                     #CE loss pass
-                    if False:
+                    if debug:
                         print()
                         print("CE loss pass")
                         print("AE grad - should be 0")
@@ -285,7 +296,8 @@ if __name__ == "__main__":
                     model.save_bb_grad()
                     model.autoencoder.encoder.zero_grad()
                     model.autoencoder.decoder.zero_grad()
-                    if False:
+                    
+                    if debug:
                         print()
                         print("Backbone target features loss pass")
                         print("AE grad - should be 0")
@@ -293,13 +305,15 @@ if __name__ == "__main__":
                         print("Backbone grad - should be changed")
                         print_bb_grad()
                     #aada on autoencoder loss pass
-
+                    model.backbone.zero_grad()
+                    model.aggregation.zero_grad()
+                    print(enc_loss_target.item())
                   
                     enc_loss = enc_loss_source + torch.max(torch.zero_(enc_loss_target), args.aada_m - enc_loss_target)
                     (enc_loss).backward()
                     enc_loss = enc_loss.item()
                     model.load_bb_grad()
-                    if False:
+                    if debug:
                         print()
                         print("AE loss pass")
                         print("AE grad - should be not 0")
@@ -307,7 +321,7 @@ if __name__ == "__main__":
                         print("Backbone grad - should be unchanged")
                         print_bb_grad()
                         print()
-                
+                exit()
                 # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
                 del loss, output, images, da_loss, enc_loss
