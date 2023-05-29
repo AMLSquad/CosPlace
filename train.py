@@ -307,7 +307,6 @@ if __name__ == "__main__":
                     #aada on autoencoder loss pass
                     model.backbone.zero_grad()
                     model.aggregation.zero_grad()
-                    print(enc_loss_target.item())
                   
                     enc_loss = enc_loss_source + torch.max(torch.zero_(enc_loss_target), args.aada_m - enc_loss_target)
                     (enc_loss).backward()
