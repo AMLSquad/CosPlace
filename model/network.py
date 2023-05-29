@@ -65,7 +65,7 @@ class GeoLocalizationNet(nn.Module):
             )
         # Domain adaptation
         self.discriminator = get_discriminator(features_dim) if domain_adaptation == True else None
-        self.autoencoder = Autoencoder(features_dim) if aada == True else None
+        self.autoencoder = Autoencoder() if aada == True else None
         self.backbone_grad_layer_3 = []
         self.backbone_grad_layer_4 = []
         self.aggregation_grad = []
@@ -124,7 +124,7 @@ class GeoLocalizationNet(nn.Module):
             
 
     
-    def forward(self, x, grl=False, aada=False, aada_linear = True, targets = None):
+    def forward(self, x, grl=False, aada=False, targets = None):
         features = self.backbone(x)
         if grl==True:
             # perform adaptation round
@@ -135,6 +135,7 @@ class GeoLocalizationNet(nn.Module):
             features = self.aggregation(features)
             # perform adaptation round
             # logits output dim is num_domains
+<<<<<<< HEAD
             if aada_linear:
 
                 #features = torch.nn.functional.adaptive_avg_pool2d(features, (1,1))
@@ -145,6 +146,10 @@ class GeoLocalizationNet(nn.Module):
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
             
+=======
+            features_sources = features[targets==0, :, :, :]
+            features_targets = features[targets==1, :, :, :]
+>>>>>>> parent of 547a75e (fully connected ae)
             ae_output_sources = self.autoencoder(features_sources)
             ae_output_targets = self.autoencoder(features_targets)
             return features_sources, features_targets, ae_output_sources, ae_output_targets

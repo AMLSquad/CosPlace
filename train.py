@@ -27,7 +27,7 @@ if __name__ == "__main__":
     debug = False
 
     def print_ae_grad():
-        print(model.autoencoder.encoder[0].weight.grad if (model.autoencoder.encoder[0].weight.grad != None) else None)
+        print(model.autoencoder.encoder[0].weight.grad[0][0][0][0] if (model.autoencoder.encoder[0].weight.grad != None) else None)
     
     def print_bb_grad():
         for name, child in model.backbone.named_children():
@@ -123,13 +123,12 @@ if __name__ == "__main__":
     val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
     test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
-    if args.test_all:
-        logging.info(f"Testing all!")
-        tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
-                        positive_dist_threshold=args.positive_dist_threshold)
-        
-        tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
-                        positive_dist_threshold=args.positive_dist_threshold)
+    
+    #tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
+     #                   positive_dist_threshold=args.positive_dist_threshold)
+    
+    #tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
+    #                    positive_dist_threshold=args.positive_dist_threshold)
 
     logging.info(f"Validation set: {val_ds}")
     logging.info(f"Test set: {test_ds}")
@@ -211,7 +210,7 @@ if __name__ == "__main__":
         
         if args.domain_adaptation or args.aada:
             da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,num_workers=args.num_workers,
-                                                        batch_size = 16, shuffle=True,
+                                                        batch_size = 24, shuffle=True,
                                                         pin_memory=(args.device == "cuda"), drop_last=True)
             
         dataloader_iterator = iter(dataloader)
@@ -422,15 +421,15 @@ if __name__ == "__main__":
 
     
     
-    if args.test_all:  
-        recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
-        logging.info(f"{tokyo_xs_test_ds}: {recalls_str}")
+"""
+    recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
+    logging.info(f"{test_ds}: {recalls_str}")
 
-        
-        
-        
-        recalls, recalls_str,_ = test.test(args, tokyo_night_test_ds, model, db_descriptors = tokyo_xs_db_descriptors)
-        logging.info(f"{tokyo_night_test_ds}: {recalls_str}")
+    
+    
+    
+    recalls, recalls_str,_ = test.test(args, tokyo_night_test_ds, model, descriptors = tokyo_xs_db_descriptors)
+    logging.info(f"{test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
-
+"""
