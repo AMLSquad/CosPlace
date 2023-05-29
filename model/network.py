@@ -132,13 +132,12 @@ class GeoLocalizationNet(nn.Module):
             x =  self.discriminator(features)
             return x
         elif aada==True:
-            features = self.aggregation(features)
             # perform adaptation round
             # logits output dim is num_domains
             if aada_linear:
 
-                #features = torch.nn.functional.adaptive_avg_pool2d(features, (1,1))
-                #features = features.view(features.shape[0], -1)
+                features = torch.nn.functional.adaptive_avg_pool2d(features, (1,1))
+                features = features.view(features.shape[0], -1)
                 features_sources = features[targets==0]
                 features_targets = features[targets==1]
             else:

@@ -63,13 +63,13 @@ class DomainAdaptationDataLoader(data.DataLoader):
             pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
 
         except StopIteration:
+            
             self.source_domain_iterator = self.source_domain_loader.__iter__()
             all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
             source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
             source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
             pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
             pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
-
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
         except:
