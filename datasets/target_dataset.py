@@ -45,7 +45,7 @@ class DomainAdaptationDataLoader(data.DataLoader):
         self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo else 0
         self.target_dim = kwargs["batch_size"] - self.source_dim - self.pseudo_dim
         del kwargs["batch_size"]
-        self.source_domain_loader = data.DataLoader(source_pseudo_dataset, batch_size=self.source_dim + self.pseudo_dim, **kwargs)
+        self.source_domain_loader = data.DataLoader(source_pseudo_dataset, batch_size=self.source_dim + self.pseudo_dim + self.pseudo_dim , **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
@@ -54,6 +54,7 @@ class DomainAdaptationDataLoader(data.DataLoader):
         return self
 
     def  __next__(self):
+        
         try:
             all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
             source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
@@ -68,12 +69,13 @@ class DomainAdaptationDataLoader(data.DataLoader):
             source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
             pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
             pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
-            
+
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
         except:
             self.target_domain_iterator = self.target_domain_loader.__iter__()
             target_images,target_domain_labels = next(self.target_domain_iterator)
         batch = (torch.cat((source_images,pseudo_images,target_images),0),torch.cat((source_domain_labels, pseudo_domain_labels, target_domain_labels),0))
+        print(len(batch[0]))
         return batch
 
