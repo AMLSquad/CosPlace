@@ -135,16 +135,14 @@ class GeoLocalizationNet(nn.Module):
             # perform adaptation round
             # logits output dim is num_domains
             if aada_linear:
-                features_sources = features[targets==0]
-                features_targets = features[targets==1]
-                print(features_sources.shape)
-                print(features_targets.shape)
+                features_sources = features[targets==0, :, :, :]
+                features_targets = features[targets==1, :, :, :]
             else:
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
             
-            ae_output_sources = self.autoencoder(features_sources)
-            ae_output_targets = self.autoencoder(features_targets)
+            features_sources, ae_output_sources = self.autoencoder(features_sources)
+            features_targets, ae_output_targets = self.autoencoder(features_targets)
             return features_sources, features_targets, ae_output_sources, ae_output_targets
         return self.aggregation(features)
 
