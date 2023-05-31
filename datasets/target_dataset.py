@@ -54,7 +54,9 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def  __next__(self):
         try:
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
-            print(source_domain_labels)
+            # loop through the source_domain_labels, if none is 0, go next
+            while not torch.any(source_domain_labels == 0):
+                source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
                     
         except StopIteration:
             self.source_domain_iterator = self.source_domain_loader.__iter__()
