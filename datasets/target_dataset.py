@@ -41,9 +41,10 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def __init__(self, source_dataset, target_dataset, pseudo_dataset = None, pseudo = True, *args, **kwargs, ):
         if pseudo and pseudo_dataset:
             print("Pseudo images in DA module")
-        self.source_dim = int(kwargs["batch_size"] * 1 / 2)
-        
         self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo and pseudo_dataset else 0
+
+        self.source_dim = int(kwargs["batch_size"] * 1 / 2)  - self.pseudo_dim
+        
         self.target_dim = kwargs["batch_size"] - self.source_dim - self.pseudo_dim
         del kwargs["batch_size"]
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim , **kwargs)
