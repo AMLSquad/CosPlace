@@ -137,6 +137,7 @@ class GeoLocalizationNet(nn.Module):
             if aada_linear:
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
+                print(features_sources.shape)
             else:
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
