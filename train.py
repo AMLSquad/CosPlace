@@ -400,7 +400,7 @@ if __name__ == "__main__":
     model.load_state_dict(best_model_state_dict)
 
     logging.info(f"Now testing on the test set: {test_ds}")
-    recalls, recalls_str,_ = test.test(args, test_ds, model)
+    recalls, recalls_str  = test.test(args, test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
     
 

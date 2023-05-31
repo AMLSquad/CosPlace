@@ -28,10 +28,6 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
         database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
-       
-        n = next(iter(database_dataloader))
-        print(len(n))
-        print(n[0].shape)
 
         for images, indices in tqdm(database_dataloader, ncols=100):
             descriptors = model(images.to(args.device))
