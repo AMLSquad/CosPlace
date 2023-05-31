@@ -210,10 +210,10 @@ if __name__ == "__main__":
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
         
-        if args.domain_adaptation or args.aada:
-            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,pseudo=args.pseudo_da, num_workers=args.num_workers, 
-                                                        batch_size = 16, shuffle=True,
-                                                        pin_memory=(args.device == "cuda"), drop_last=True)
+        if args.domain_adaptation:
+            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,num_workers=args.num_workers,
+                                                    batch_size = 16, shuffle=True,
+                                                    pin_memory=(args.device == "cuda"), drop_last=True)
             
         dataloader_iterator = iter(dataloader)
         
