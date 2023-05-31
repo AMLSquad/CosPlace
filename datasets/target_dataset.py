@@ -54,6 +54,8 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def  __next__(self):
         try:
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+            print(source_domain_labels)
+                    
         except StopIteration:
             self.source_domain_iterator = self.source_domain_loader.__iter__()
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)

@@ -141,6 +141,8 @@ class GeoLocalizationNet(nn.Module):
                 features_sources = features[targets==0, :, :, :]
                 features_targets = features[targets==1, :, :, :]
             
+            # only if feature_sources dim is not 0
+            
             features_sources, ae_output_sources = self.autoencoder(features_sources)
             features_targets, ae_output_targets = self.autoencoder(features_targets)
             return features_sources, features_targets, ae_output_sources, ae_output_targets
