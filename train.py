@@ -240,8 +240,6 @@ if __name__ == "__main__":
             
             if not args.use_amp16:
 
-                
-
                 #Get descriptors from the model (ends with fc and normalization)
                 descriptors = model(images)
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
@@ -253,21 +251,6 @@ if __name__ == "__main__":
                     loss = criterion(output, targets)
                 loss.backward()
 
-
-                if args.aada:
-                    #CE loss pass
-                    if debug:
-                        print()
-                        print("CE loss pass")
-                        print("AE grad - should be 0")
-                        
-                        print_ae_grad()
-                        print("Backbone grad - should be not 0")
-                        print_bb_grad()
-                                                   
-                #append the loss to the epoch losses
-
-                
                 da_loss = 0
                 enc_loss = 0
                 if args.domain_adaptation and not args.aada:

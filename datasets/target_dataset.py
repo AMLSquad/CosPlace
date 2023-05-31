@@ -31,21 +31,19 @@ class TargetDataset(data.Dataset):
         pil_img = open_image(image_path)
         normalized_img = self.base_transform(pil_img)
         #1 stands for night
-        return normalized_img, 1
+        return normalized_img, 1 
 
     def __len__(self):
         return len(self.images_paths)
 
 
 class DomainAdaptationDataLoader(data.DataLoader):
-    def __init__(self, source_pseudo_dataset, target_dataset, pseudo = False, *args, **kwargs, ):
-        
+    def __init__(self, source_dataset, target_dataset, *args, **kwargs):
+
         self.source_dim = int(kwargs["batch_size"] * 1 / 2)
-        
-        self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo else 0
-        self.target_dim = kwargs["batch_size"] - self.source_dim - self.pseudo_dim
+        self.target_dim = kwargs["batch_size"] - self.source_dim
         del kwargs["batch_size"]
-        self.source_domain_loader = data.DataLoader(source_pseudo_dataset, batch_size=self.source_dim + int(self.pseudo_dim * 2.5)  , **kwargs)
+        self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim, **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
@@ -54,27 +52,16 @@ class DomainAdaptationDataLoader(data.DataLoader):
         return self
 
     def  __next__(self):
-        
         try:
-            all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
-            source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
-            source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
-            pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
-            pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
-
+            source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
         except StopIteration:
-            
             self.source_domain_iterator = self.source_domain_loader.__iter__()
-            all_source_images,_,_,all_source_domain_labels = next(self.source_domain_iterator)
-            source_images = all_source_images[all_source_domain_labels == 0][:self.source_dim]
-            source_domain_labels = all_source_domain_labels[all_source_domain_labels == 0][:self.source_dim]
-            pseudo_images = all_source_images[all_source_domain_labels == 1][:self.pseudo_dim]
-            pseudo_domain_labels = all_source_domain_labels[all_source_domain_labels == 1][:self.pseudo_dim]
+            source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
         except:
             self.target_domain_iterator = self.target_domain_loader.__iter__()
             target_images,target_domain_labels = next(self.target_domain_iterator)
-        batch = (torch.cat((source_images,pseudo_images,target_images),0),torch.cat((source_domain_labels, pseudo_domain_labels, target_domain_labels),0))
-        return batch
 
+        batch = (torch.cat((source_images, target_images),0),torch.cat((source_domain_labels, target_domain_labels),0))
+        return batch

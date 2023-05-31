@@ -110,6 +110,8 @@ class Autoencoder(nn.Module):
        
     
     def forward(self, x):
+        x = torch.nn.functional.adaptive_avg_pool2d(x, (1,1))
+        x = x.view(x.shape[0], -1)
         
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
