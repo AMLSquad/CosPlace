@@ -38,6 +38,15 @@ if args.resume_model is not None:
         del model_state_dict["discriminator.3.bias"]
         del model_state_dict["discriminator.5.weight"]
         del model_state_dict["discriminator.5.bias"]
+    if args.aada:
+        del model_state_dict["autoencoder.encoder.0.weight"]
+        del model_state_dict["autoencoder.encoder.0.bias"]
+        del model_state_dict["autoencoder.encoder.2.weight"]
+        del model_state_dict["autoencoder.encoder.2.bias"]
+        del model_state_dict["autoencoder.decoder.0.weight"]
+        del model_state_dict["autoencoder.decoder.0.bias"]
+        del model_state_dict["autoencoder.decoder.2.weight"]
+        del model_state_dict["autoencoder.decoder.2.bias"]
     model.load_state_dict(model_state_dict)
 else:
     logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +

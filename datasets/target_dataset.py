@@ -47,6 +47,7 @@ class DomainAdaptationDataLoader(data.DataLoader):
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
+        self.aada = args.aada
         
     def __iter__(self):
         return self
@@ -54,9 +55,10 @@ class DomainAdaptationDataLoader(data.DataLoader):
     def  __next__(self):
         try:
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
-            # loop through the source_domain_labels, if none is 0, go next
-            while not torch.any(source_domain_labels == 0):
-                source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+            # loop through the source_domain_labels, if none is 0, go next (required for aada)
+            if self.aada:
+                while not torch.any(source_domain_labels == 0):
+                    source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
                     
         except StopIteration:
             self.source_domain_iterator = self.source_domain_loader.__iter__()
