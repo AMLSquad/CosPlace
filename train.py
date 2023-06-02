@@ -209,7 +209,6 @@ if __name__ == "__main__":
         dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
-        print(args.aada)
         if args.domain_adaptation or args.aada:
             da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset, aada = args.aada, num_workers=args.num_workers,
                                                     batch_size = 16, shuffle=True,
