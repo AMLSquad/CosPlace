@@ -38,7 +38,7 @@ class TargetDataset(data.Dataset):
 
 
 class DomainAdaptationDataLoader(data.DataLoader):
-    def __init__(self, source_dataset, target_dataset, *args, **kwargs):
+    def __init__(self, source_dataset, target_dataset, aada = False, *args, **kwargs):
 
         self.source_dim = int(kwargs["batch_size"] * 1 / 2)
         self.target_dim = kwargs["batch_size"] - self.source_dim
@@ -47,7 +47,8 @@ class DomainAdaptationDataLoader(data.DataLoader):
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
-        self.aada = kwargs["aada"]
+        self.aada = aada
+        print("QUIQUQIUQIQU")
         print(self.aada)
         
     def __iter__(self):
