@@ -47,7 +47,8 @@ class DomainAdaptationDataLoader(data.DataLoader):
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
         self.target_domain_iterator = self.target_domain_loader.__iter__()
-        self.aada = args.aada
+        self.aada = kwargs["aada"]
+        print(self.aada)
         
     def __iter__(self):
         return self
