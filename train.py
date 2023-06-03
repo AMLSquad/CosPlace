@@ -102,6 +102,7 @@ if __name__ == "__main__":
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
 
     if args.pseudo_target_folder:
+        print("QUIQUIQUI")
         pseudo_groups = [TrainDataset(args, args.pseudo_target_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
     
@@ -213,7 +214,7 @@ if __name__ == "__main__":
         dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
-        print(args.pseudo_target_folder)
+     
         if args.pseudo_target_folder:
             pseudo_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=batch_size, shuffle=True,

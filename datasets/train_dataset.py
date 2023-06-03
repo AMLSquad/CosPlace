@@ -45,7 +45,7 @@ class TrainDataset(torch.utils.data.Dataset):
         self.base_preprocessing = base_preprocessing
         self.is_night = is_night
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
-        dataset_name = os.path.basename(args.dataset_folder)
+        dataset_name = os.path.basename(dataset_folder)
         filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch" 
         if not os.path.exists(filename): #se il filename non esiste
             os.makedirs("cache", exist_ok=True) #crea la cartella cache
