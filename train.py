@@ -218,6 +218,7 @@ if __name__ == "__main__":
             pseudo_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
+            pseudo_dataloader_iterator = iter(pseudo_dataloader)
             
         if args.domain_adaptation or args.aada:
             da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset, aada = args.aada, num_workers=args.num_workers,
@@ -227,7 +228,10 @@ if __name__ == "__main__":
                                                 batch_size=4, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
             
+            pseudo_da_dataloader_iterator = iter(pseudo_da_dataloader)
+            
         dataloader_iterator = iter(dataloader)
+        
         
         model = model.train()
         #list of epoch losses. At the end the mean will be computed
@@ -236,18 +240,18 @@ if __name__ == "__main__":
             images, targets, _, _ = next(dataloader_iterator)
             
             images, targets = images.to(args.device), targets.to(args.device)
+        
 
             if args.pseudo_target_folder:
-                pseudo_images, pseudo_targets, _,_ = next(pseudo_dataloader)
+                pseudo_images, pseudo_targets, _,_ = next(pseudo_dataloader_iterator)
                 pseudo_images, pseudo_targets = pseudo_images.to(args.device), pseudo_targets.to(args.device)
                 
-                
-            
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
-                pseudo_da_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader)
+                pseudo_da_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader_iterator)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
                 pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), pseudo_da_targets.to(args.device)
+                print(da_targets, pseudo_da_targets)
             
 
             if args.augmentation_device == "cuda":
