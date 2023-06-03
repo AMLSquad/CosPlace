@@ -42,7 +42,7 @@ class DomainAdaptationDataLoader(data.DataLoader):
 
         self.source_dim = int(target_batch_size)
         self.target_dim = int(target_batch_size) // 2
-        del kwargs["batch_size"]
+
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim, **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
         self.target_domain_loader = data.DataLoader(target_dataset, batch_size=self.target_dim, **kwargs)
