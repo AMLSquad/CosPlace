@@ -245,7 +245,7 @@ if __name__ == "__main__":
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
                 pseudo_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader)
-                da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
+                pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), da_targets.to(args.device)
                 pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), pseudo_targets.to(args.device)
             
 
