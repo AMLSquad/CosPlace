@@ -38,10 +38,10 @@ class TargetDataset(data.Dataset):
 
 
 class DomainAdaptationDataLoader(data.DataLoader):
-    def __init__(self, source_dataset, target_dataset, aada = False, *args, **kwargs):
+    def __init__(self, source_dataset, target_dataset, aada = False, target_batch_size = 8, *args, **kwargs):
 
-        self.source_dim = int(kwargs["batch_size"] * 1 / 2)
-        self.target_dim = kwargs["batch_size"] - self.source_dim
+        self.source_dim = int(target_batch_size)
+        self.target_dim = int(target_batch_size) // 2
         del kwargs["batch_size"]
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim, **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
@@ -53,21 +53,26 @@ class DomainAdaptationDataLoader(data.DataLoader):
         return self
 
     def  __next__(self):
+        
         try:
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
             # loop through the source_domain_labels, if none is 0, go next (required for aada)
+            """
             if self.aada:
                 while not torch.any(source_domain_labels == 0):
                     source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+            """
                     
         except StopIteration:
             self.source_domain_iterator = self.source_domain_loader.__iter__()
             source_images,_,_,source_domain_labels = next(self.source_domain_iterator)
+        
         try:
             target_images,target_domain_labels = next(self.target_domain_iterator)
         except:
             self.target_domain_iterator = self.target_domain_loader.__iter__()
             target_images,target_domain_labels = next(self.target_domain_iterator)
+
 
         batch = (torch.cat((source_images, target_images),0),torch.cat((source_domain_labels, target_domain_labels),0))
         return batch

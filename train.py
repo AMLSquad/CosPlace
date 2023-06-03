@@ -101,6 +101,9 @@ if __name__ == "__main__":
     groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
 
+    if args.pseudo_target_folder:
+        pseudo_groups = [TrainDataset(args, args.pseudo_target_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
+                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
     
 
     # Each group has its own classifier, which depends on the number of classes in the group
@@ -206,13 +209,22 @@ if __name__ == "__main__":
         classifiers[current_group_num] = classifiers[current_group_num].to(args.device)
         util.move_to_device(classifiers_optimizers[current_group_num], args.device)
         # setup the dataloader
+        batch_size = args.batch_size if not args.pseudo_target_folder else args.batch_size//2
         dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=args.batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
+        if args.pseudo_target_folder:
+            pseudo_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
+                                                batch_size=args.batch_size, shuffle=True,
+                                                pin_memory=(args.device == "cuda"), drop_last=True)
+            
         if args.domain_adaptation or args.aada:
             da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset, aada = args.aada, num_workers=args.num_workers,
-                                                    batch_size = 16, shuffle=True,
+                                                    target_batch_size = 8, shuffle=True,
                                                     pin_memory=(args.device == "cuda"), drop_last=True)
+            pseudo_da_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
+                                                batch_size=4, shuffle=True,
+                                                pin_memory=(args.device == "cuda"), drop_last=True)
             
         dataloader_iterator = iter(dataloader)
         
@@ -223,10 +235,18 @@ if __name__ == "__main__":
             images, targets, _, _ = next(dataloader_iterator)
             
             images, targets = images.to(args.device), targets.to(args.device)
+
+            if args.pseudo_target_folder:
+                pseudo_images, pseudo_targets, _,_ = next(pseudo_dataloader)
+                pseudo_images, pseudo_targets = pseudo_images.to(args.device), pseudo_targets.to(args.device)
+                
+                
             
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
+                pseudo_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
+                pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), pseudo_targets.to(args.device)
             
 
             if args.augmentation_device == "cuda":
@@ -241,8 +261,14 @@ if __name__ == "__main__":
 
                 #Get descriptors from the model (ends with fc and normalization)
                 descriptors = model(images)
-                #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
-                output = classifiers[current_group_num](descriptors, targets)
+                if args.pseudo_target_folder:
+                    pseudo_descriptors = model(pseudo_images)
+                    final_descriptors = torch.cat((descriptors, pseudo_descriptors), 0)
+                    final_targets = torch.cat((targets, pseudo_targets), 0)
+                    output = classifiers[current_group_num](final_descriptors, final_targets)
+                else:
+                    output = classifiers[current_group_num](descriptors, targets)
+
                 #Applies the softmax loss
                 if (args.loss == "new_loss"):
                     loss = criterion(output)
@@ -253,6 +279,9 @@ if __name__ == "__main__":
                 da_loss = 0
                 enc_loss = 0
                 if args.domain_adaptation and not args.aada:
+                    # concat target (that contains also source) and pseudo
+                    da_images = torch.cat((da_images, pseudo_da_images), 0)
+                    da_targets = torch.cat((da_targets, pseudo_da_targets), 0)
                     da_output = model(da_images, grl=True)
                     da_loss = criterion(da_output, da_targets)
                     (da_loss * args.grl_loss_weight).backward()
@@ -263,7 +292,9 @@ if __name__ == "__main__":
                     """
                     python train.py --dataset_folder small --groups_num 1 --epochs_num 3 --device cpu --target_dataset_folder tokyo-night --pseudo_target_folder small_night --aada True
                     """
-                
+                    # concat target (that contains also source) and pseudo
+                    da_images = torch.cat((da_images, pseudo_da_images), 0)
+                    da_targets = torch.cat((da_targets, pseudo_da_targets), 0)
 
                     features_source, features_target, enc_output_source, enc_output_target = model(da_images, aada=True, targets = da_targets)
                     enc_loss_source = autoencoder_criterion(enc_output_source, features_source)
