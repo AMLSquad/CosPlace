@@ -213,6 +213,7 @@ if __name__ == "__main__":
         dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
+        print(args.pseudo_target_folder)
         if args.pseudo_target_folder:
             pseudo_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
                                                 batch_size=batch_size, shuffle=True,
