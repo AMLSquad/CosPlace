@@ -102,9 +102,8 @@ if __name__ == "__main__":
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
 
     if args.pseudo_target_folder:
-        print("QUIQUIQUI")
         pseudo_groups = [TrainDataset(args, args.pseudo_target_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
+                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing, is_night=True) for n in range(args.groups_num)]
     
 
     # Each group has its own classifier, which depends on the number of classes in the group
