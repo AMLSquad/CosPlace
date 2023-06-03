@@ -285,8 +285,8 @@ if __name__ == "__main__":
                 enc_loss = 0
                 if args.domain_adaptation and not args.aada:
                     # concat target (that contains also source) and pseudo
-                    da_images = torch.cat((da_images, pseudo_da_images), 0)
-                    da_targets = torch.cat((da_targets, pseudo_da_targets), 0)
+                    da_images = torch.cat((pseudo_da_images, da_images), 0)
+                    da_targets = torch.cat((pseudo_da_targets, da_targets), 0)
                     
                     da_output = model(da_images, grl=True)
                     da_loss = criterion(da_output, da_targets)
