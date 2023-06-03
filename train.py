@@ -243,15 +243,15 @@ if __name__ == "__main__":
         
 
             if args.pseudo_target_folder:
-                pseudo_images, pseudo_targets, _,_ = next(pseudo_dataloader_iterator)
+                pseudo_images, pseudo_targets, _,_ = next(pseudo_dataloader)
                 pseudo_images, pseudo_targets = pseudo_images.to(args.device), pseudo_targets.to(args.device)
                 
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
-                pseudo_da_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader_iterator)
+                pseudo_da_images, _, paths, pseudo_da_targets = next(pseudo_da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
                 pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), pseudo_da_targets.to(args.device)
-                print(da_targets, pseudo_da_targets)
+                print(pseudo_da_targets, da_targets, paths)
             
 
             if args.augmentation_device == "cuda":
