@@ -248,7 +248,7 @@ if __name__ == "__main__":
                 
             if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
-                pseudo_da_images, _, paths, pseudo_da_targets = next(pseudo_da_dataloader_iterator)
+                pseudo_da_images, _, _, pseudo_da_targets = next(pseudo_da_dataloader_iterator)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
                 pseudo_da_images, pseudo_da_targets = pseudo_da_images.to(args.device), pseudo_da_targets.to(args.device)
                 
@@ -301,13 +301,13 @@ if __name__ == "__main__":
                     # concat target (that contains also source) and pseudo
                     da_images = torch.cat((da_images, pseudo_da_images), 0)
                     da_targets = torch.cat((da_targets, pseudo_da_targets), 0)
-                    print(da_images.shape)
-                    print(da_targets)
+                    
                     features_source, features_target, enc_output_source, enc_output_target = model(da_images, aada=True, targets = da_targets)
+                    print(enc_output_source.shape)
+                    print(features_source.shape)
                     enc_loss_source = autoencoder_criterion(enc_output_source, features_source)
                     enc_loss_target = autoencoder_criterion(enc_output_target, features_target)
-                    
-                    
+                   
 
                     
 
