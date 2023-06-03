@@ -211,11 +211,11 @@ if __name__ == "__main__":
         # setup the dataloader
         batch_size = args.batch_size if not args.pseudo_target_folder else args.batch_size//2
         dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
-                                                batch_size=args.batch_size, shuffle=True,
+                                                batch_size=batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
         if args.pseudo_target_folder:
             pseudo_dataloader = commons.InfiniteDataLoader(pseudo_groups[current_group_num], num_workers=args.num_workers,
-                                                batch_size=args.batch_size, shuffle=True,
+                                                batch_size=batch_size, shuffle=True,
                                                 pin_memory=(args.device == "cuda"), drop_last=True)
             
         if args.domain_adaptation or args.aada:
