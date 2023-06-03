@@ -303,8 +303,7 @@ if __name__ == "__main__":
                     da_targets = torch.cat((da_targets, pseudo_da_targets), 0)
                     
                     features_source, features_target, enc_output_source, enc_output_target = model(da_images, aada=True, targets = da_targets)
-                    print(enc_output_source.shape)
-                    print(features_source.shape)
+
                     enc_loss_source = autoencoder_criterion(enc_output_source, features_source)
                     enc_loss_target = autoencoder_criterion(enc_output_target, features_target)
                    
