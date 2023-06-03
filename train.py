@@ -264,12 +264,10 @@ if __name__ == "__main__":
                 descriptors = model(images)
                 if args.pseudo_target_folder:
                     pseudo_descriptors = model(pseudo_images)
-                    final_descriptors = torch.cat((descriptors, pseudo_descriptors), 0)
-                    final_targets = torch.cat((targets, pseudo_targets), 0)
-                    print(final_descriptors.shape)
-                    output = classifiers[current_group_num](final_descriptors, final_targets)
-                else:
-                    output = classifiers[current_group_num](descriptors, targets)
+                    descriptors = torch.cat((descriptors, pseudo_descriptors), 0)
+                    targets = torch.cat((targets, pseudo_targets), 0)
+         
+                output = classifiers[current_group_num](descriptors, targets)
 
                 #Applies the softmax loss
                 if (args.loss == "new_loss"):
