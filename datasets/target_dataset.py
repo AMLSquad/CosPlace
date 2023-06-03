@@ -40,8 +40,8 @@ class TargetDataset(data.Dataset):
 class DomainAdaptationDataLoader(data.DataLoader):
     def __init__(self, source_dataset, target_dataset, aada = False, target_batch_size = 8, *args, **kwargs):
 
-        self.source_dim = int(target_batch_size)
-        self.target_dim = int(target_batch_size) // 2
+        self.source_dim = int(target_batch_size) // 2
+        self.target_dim = int(target_batch_size) 
 
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim, **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
