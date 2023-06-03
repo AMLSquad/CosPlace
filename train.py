@@ -306,6 +306,7 @@ if __name__ == "__main__":
 
                     enc_loss_source = autoencoder_criterion(enc_output_source, features_source)
                     enc_loss_target = autoencoder_criterion(enc_output_target, features_target)
+                    print(enc_loss_source.item(), enc_loss_target.item() )
                    
 
                     
