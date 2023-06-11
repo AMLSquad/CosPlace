@@ -5,7 +5,8 @@ cache
 small
 our_code/small_night.zip
 our_code/content/small_night
-syntetic_night_augmentation/
+syntethic_night_augmentation/
+
 sf-xs
 parser.py
 tokyo_xs
@@ -21,3 +22,6 @@ compact
 soups
 soups_output
 r18_places.pth
+tokyo-night
+FDA_PP_dataset
+syntetic_night_augmentation
