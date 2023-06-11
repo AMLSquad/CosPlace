@@ -34,6 +34,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
                 descriptors = descriptors.cpu().numpy()
                 all_descriptors[indices.numpy(), :] = descriptors
         else:
+            #to speed up the test on tokyo night and tokyo xs since the db descriptors are the same
             all_descriptors[:eval_ds.database_num] = db_descriptors
         
         

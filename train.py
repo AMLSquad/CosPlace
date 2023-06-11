@@ -20,7 +20,6 @@ if __name__ == "__main__":
     from datasets.test_dataset import TestDataset
     from datasets.train_dataset import TrainDataset
     from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
-    from torch.utils.data import DataLoader
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -66,11 +65,8 @@ if __name__ == "__main__":
     # set model to train mode
     model = model.to(args.device).train()
     #### Optimizer
-    if args.loss == "new_loss":
-        logging.debug("Using new loss")
-        criterion = test_new_loss.NewLoss()
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
+    
+    criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
 
     if args.domain_adaptation:
@@ -105,11 +101,9 @@ if __name__ == "__main__":
         classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
     elif args.loss == "arcface":
         classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
-    elif args.loss == "new_loss":
-        classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group), l = args.l_loss) for group in groups]
     else:
         logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
-        exit
+
     classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
 
     logging.info(f"Using {len(groups)} groups")
@@ -119,7 +113,9 @@ if __name__ == "__main__":
     val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
     test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
+    
     if args.test_all:
+        #to test on all the test set at the end of training
         logging.info(f"Testing all!")
         tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
@@ -167,7 +163,8 @@ if __name__ == "__main__":
             apply_aug = False
         else:
             logging.debug("No valid augmentation, please try again typing 'brightness', 'contrast', 'saturation', 'bcs', 'colorjitter' or 'none'")
-            exit
+            exit()
+
     if apply_aug:
         gpu_augmentation = T.Compose([
             augType,
@@ -252,31 +249,14 @@ if __name__ == "__main__":
             
             
             if not args.use_amp16:
-
-                
-
                 #Get descriptors from the model (ends with fc and normalization)
                 descriptors = model(images)
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
                 output = classifiers[current_group_num](descriptors, targets)
                 #Applies the softmax loss
-                if (args.loss == "new_loss"):
-                    loss = criterion(output)
-                else:
-                    loss = criterion(output, targets)
+                
+                loss = criterion(output, targets)
                 loss.backward()
-
-
-                if args.aada:
-                    #CE loss pass
-                    if debug:
-                        print()
-                        print("CE loss pass")
-                        print("AE grad - should be 0")
-                        
-                        print_ae_grad()
-                        print("Backbone grad - should be not 0")
-                        print_bb_grad()
                                                    
                 #append the loss to the epoch losses
 
@@ -305,19 +285,11 @@ if __name__ == "__main__":
                     
 
                     #aada on backbone loss pass
-                    
                     (args.aada_loss_weight * enc_loss_target).backward(retain_graph=True)
                     model.save_bb_grad()
                     model.autoencoder.encoder.zero_grad()
                     model.autoencoder.decoder.zero_grad()
                     
-                    if debug:
-                        print()
-                        print("Backbone target features loss pass")
-                        print("AE grad - should be 0")
-                        print_ae_grad()
-                        print("Backbone grad - should be changed")
-                        print_bb_grad()
                     #aada on autoencoder loss pass
                     model.backbone.zero_grad()
                     model.aggregation.zero_grad()
@@ -326,14 +298,7 @@ if __name__ == "__main__":
                     (enc_loss).backward()
                     enc_loss = enc_loss.item()
                     model.load_bb_grad()
-                    if debug:
-                        print()
-                        print("AE loss pass")
-                        print("AE grad - should be not 0")
-                        print_ae_grad()
-                        print("Backbone grad - should be unchanged")
-                        print_bb_grad()
-                        print()
+                    
 
                 # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
                 epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
@@ -368,32 +333,15 @@ if __name__ == "__main__":
                         #CE loss pass
                         da_loss = criterion(da_output, da_targets)
                         scaler.scale(da_loss).backward(retain_graph=True)
-                        print("CE loss pass")
-                        print("AE grad - should be 0")
-                        print(model.autoencoder.encoder[0].weight.grad)
-                        print("Backbone grad - should be not 0")
-                        print(model.backbone.weight.grad)
+                        
 
                         #AE loss pass
                         enc_loss_source = autoencoder_criterion(enc_output_source, images_source)
                         enc_loss_target = autoencoder_criterion(enc_output_target, images_target)
                         enc_loss = enc_loss_source + max(0, args.aada_m - enc_loss_target)
                         scaler.scale(enc_loss).backward(retain_graph=True)
-                        print("AE loss pass")
-                        print("AE grad - should be not 0")
-                        print(model.autoencoder.encoder[0].weight.grad)
-                        print("Backbone grad - should be unchanged")
-                        print(model.backbone.weight.grad)
-
-
                         scaler.scale(enc_loss_target).backward(retain_graph=True)
-                        print("AE loss pass")
-                        print("AE grad - should be unchanged")
-                        print(model.autoencoder.encoder[0].weight.grad)
-                        print("Backbone grad - should be changed")
-                        print(model.backbone.weight.grad)
-
-
+                        
                         del da_output, da_images, enc_output_source, enc_output_target, images_source, images_target
                 epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) + enc_loss ) 
                 del loss, output, images, da_loss, enc_loss
@@ -439,10 +387,6 @@ if __name__ == "__main__":
     if args.test_all:  
         recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
         logging.info(f"{tokyo_xs_test_ds}: {recalls_str}")
-
-        
-        
-        
         recalls, recalls_str,_ = test.test(args, tokyo_night_test_ds, model, db_descriptors = tokyo_xs_db_descriptors)
         logging.info(f"{tokyo_night_test_ds}: {recalls_str}")
 

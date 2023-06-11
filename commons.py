@@ -12,6 +12,7 @@ class InfiniteDataLoader(torch.utils.data.DataLoader):
     def __init__(self,  *args, **kwargs):
         pseudo_dataset = None
         if kwargs["pseudo_dataset"]:
+            logging.debug("Pseudo in main branch")
             pseudo_dataset = kwargs["pseudo_dataset"]
         del kwargs["pseudo_dataset"]
         super().__init__(*args, **kwargs)
@@ -38,9 +39,7 @@ class InfiniteDataLoader(torch.utils.data.DataLoader):
             except StopIteration:
                 self.pseudo_dataset_iterator = self.pseudo_dataset_loader.__iter__()
                 pseudo_batch = next(self.pseudo_dataset_iterator)
-
             batch = torch.cat([batch[0], pseudo_batch[0]], 0), torch.cat([batch[1], pseudo_batch[1]],0)
-
         return batch[0], batch[1]
 
 

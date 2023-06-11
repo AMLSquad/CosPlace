@@ -7,6 +7,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from sklearn.neighbors import NearestNeighbors
 import torch
+import logging
 
 def open_image(path):
     return Image.open(path).convert("RGB")
@@ -40,17 +41,22 @@ class TargetDataset(data.Dataset):
 class DomainAdaptationDataLoader(data.DataLoader):
     def __init__(self, source_dataset, target_dataset, pseudo_dataset = None, pseudo = True, *args, **kwargs, ):
         if pseudo and pseudo_dataset:
-            print("Pseudo images in DA module")
-        self.pseudo_dim = int(kwargs["batch_size"] * 1 / 4) if pseudo and pseudo_dataset else 0
+            logging.debug("Pseudo images in DA module")
+        else:
+            logging.debug("No pseudo images in DA module")
 
-        self.source_dim = int(kwargs["batch_size"] * 1 / 2)  - self.pseudo_dim
-        
+        self.pseudo_dim = int(kwargs["batch_size"] * 1 / 3) if pseudo and pseudo_dataset else 0
+
+        self.source_dim = int(kwargs["batch_size"] * 1 / 3)
+
         self.target_dim = kwargs["batch_size"] - self.source_dim - self.pseudo_dim
+
+        logging.debug(f"source_dim {self.source_dim}, pseudo dim {self.pseudo_dim}, target dim {self.target_dim}")
         del kwargs["batch_size"]
         self.source_domain_loader = data.DataLoader(source_dataset, batch_size=self.source_dim , **kwargs)
         self.source_domain_iterator = self.source_domain_loader.__iter__()
 
-        if pseudo_dataset:
+        if pseudo_dataset and pseudo:
             self.pseudo_domain_loader = data.DataLoader(pseudo_dataset, batch_size=self.pseudo_dim , **kwargs)
             self.pseudo_domain_iterator = self.pseudo_domain_loader.__iter__()
 

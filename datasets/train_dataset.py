@@ -86,6 +86,7 @@ class TrainDataset(torch.utils.data.Dataset):
         class_id = self.classes_ids[class_num]
         # Pick a random image among those in this class.
         image_path = random.choice(self.images_per_class[class_id])
+        
         pil_image = open_image(image_path)    
         tensor_image = T.functional.to_tensor(pil_image)
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
