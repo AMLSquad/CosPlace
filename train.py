@@ -20,9 +20,28 @@ if __name__ == "__main__":
     from datasets.test_dataset import TestDataset
     from datasets.train_dataset import TrainDataset
     from datasets.target_dataset import TargetDataset, DomainAdaptationDataLoader
-    from torch.utils.data import DataLoader
     from itertools import chain
     torch.backends.cudnn.benchmark = True  # Provides a speedup
+
+    debug = False
+
+    def print_ae_grad():
+        print(model.autoencoder.encoder[0].weight.grad if (model.autoencoder.encoder[0].weight.grad != None) else None)
+    
+    def print_bb_grad():
+        for name, child in model.backbone.named_children():
+            if name == "6":
+                for w in child.parameters():
+                    print("Backbone grad layer 3")
+                    print(w.grad[0][0][0])
+                    break
+            if name == "7":
+                for w in child.parameters():
+                    print("Backbone grad layer 4")
+                    print(w.grad[0][0][0])  
+                    break
+
+
     
     args = parser.parse_arguments()
     start_time = datetime.now()
@@ -32,9 +51,9 @@ if __name__ == "__main__":
     logging.info(" ".join(sys.argv))
     logging.info(f"Arguments: {args}")
     logging.info(f"The outputs are being saved in {output_folder}")
-    
+
     #### Model
-    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path)
+    model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, domain_adaptation= args.domain_adaptation,backbone_path= args.backbone_path, aada = args.aada)
 
     logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -46,30 +65,34 @@ if __name__ == "__main__":
     # set model to train mode
     model = model.to(args.device).train()
     #### Optimizer
-    if args.loss == "new_loss":
-        logging.debug("Using new loss")
-        criterion = test_new_loss.NewLoss()
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
+    
+    criterion = torch.nn.CrossEntropyLoss()
     # Remove the domain classifier parameters from the model parameters
-
 
     if args.domain_adaptation:
         target_dataset = TargetDataset(args.target_dataset_folder)
         domain_criterion = torch.nn.CrossEntropyLoss()
+    if args.aada:
+        target_dataset = TargetDataset(args.target_dataset_folder)
+        domain_criterion = torch.nn.CrossEntropyLoss()
+        autoencoder_criterion = torch.nn.MSELoss()
 
 
-    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters(), model.discriminator.parameters() if args.domain_adaptation else [])
+    model_parameters = chain(model.backbone.parameters(), model.aggregation.parameters(), model.discriminator.parameters() if args.domain_adaptation else [], model.autoencoder.parameters() if args.aada else [])
     model_optimizer = torch.optim.Adam(model_parameters, lr=args.lr)
 
 
-        
 
     #### Datasets
     # Each group is treated as a different dataset
     groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                         current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing) for n in range(args.groups_num)]
-
+    
+    if args.pseudo_target_folder:
+        pseudo_groups = [TrainDataset(args, args.pseudo_target_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
+                        current_group=n, min_images_per_class=args.min_images_per_class, preprocessing=args.preprocessing, base_preprocessing = args.base_preprocessing,
+                        pseudo_target=True
+                        ) for n in range(args.groups_num)]
 
     # Each group has its own classifier, which depends on the number of classes in the group
     if args.loss == "cosface": 
@@ -78,11 +101,9 @@ if __name__ == "__main__":
         classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
     elif args.loss == "arcface":
         classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
-    elif args.loss == "new_loss":
-        classifiers = [test_new_loss.MarginCosineProduct(args.fc_output_dim, len(group), l = args.l_loss) for group in groups]
     else:
         logging.debug("No valid loss, please try again typing 'cosface', 'sphereface' or 'arcface'")
-        exit
+
     classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
 
     logging.info(f"Using {len(groups)} groups")
@@ -92,6 +113,16 @@ if __name__ == "__main__":
     val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
     test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
                         positive_dist_threshold=args.positive_dist_threshold)
+    
+    if args.test_all:
+        #to test on all the test set at the end of training
+        logging.info(f"Testing all!")
+        tokyo_xs_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="queries_v1",
+                        positive_dist_threshold=args.positive_dist_threshold)
+        
+        tokyo_night_test_ds = TestDataset(args.tokyo_xs_dataset_folder, queries_folder="night/",
+                        positive_dist_threshold=args.positive_dist_threshold)
+
     logging.info(f"Validation set: {val_ds}")
     logging.info(f"Test set: {test_ds}")
 
@@ -132,7 +163,8 @@ if __name__ == "__main__":
             apply_aug = False
         else:
             logging.debug("No valid augmentation, please try again typing 'brightness', 'contrast', 'saturation', 'bcs', 'colorjitter' or 'none'")
-            exit
+            exit()
+
     if apply_aug:
         gpu_augmentation = T.Compose([
             augType,
@@ -166,25 +198,45 @@ if __name__ == "__main__":
         classifiers[current_group_num] = classifiers[current_group_num].to(args.device)
         util.move_to_device(classifiers_optimizers[current_group_num], args.device)
         # setup the dataloader
-        dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
-                                                batch_size=args.batch_size, shuffle=True,
-                                                pin_memory=(args.device == "cuda"), drop_last=True)
+        batch_size = args.batch_size
+        if args.pseudo_target_folder:
+            batch_size = int(batch_size / 2)
         
-        if args.domain_adaptation:
-            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,num_workers=args.num_workers,
-                                                        batch_size = 24, shuffle=True,
+        
+
+        dataloader = commons.InfiniteDataLoader(groups[current_group_num],
+                                                pseudo_dataset = pseudo_groups[current_group_num] if args.pseudo_target_folder else None,
+                                                 num_workers=args.num_workers,
+                                                batch_size=batch_size, shuffle=True,
+                                                pin_memory=(args.device == "cuda"), drop_last=True,
+                                                )
+        
+       
+
+
+        if args.domain_adaptation or args.aada:
+
+            
+
+            da_dataloader = DomainAdaptationDataLoader(groups[current_group_num], target_dataset,
+                                                       pseudo_dataset= 
+                                                       pseudo_groups[current_group_num] if args.pseudo_target_folder else None,
+                                                       
+                                                       pseudo=args.pseudo_da, num_workers=args.num_workers, 
+                                                        batch_size = 16, shuffle=True,
                                                         pin_memory=(args.device == "cuda"), drop_last=True)
+            
         dataloader_iterator = iter(dataloader)
         
         model = model.train()
         #list of epoch losses. At the end the mean will be computed
         epoch_losses = np.zeros((0, 1), dtype=np.float32)
         for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
-            images, targets, _, _ = next(dataloader_iterator)
-            
+            images, targets = next(dataloader_iterator)
+
             images, targets = images.to(args.device), targets.to(args.device)
             
-            if args.domain_adaptation:
+            if args.domain_adaptation or args.aada:
                 da_images, da_targets = next(da_dataloader)
                 da_images, da_targets = da_images.to(args.device), da_targets.to(args.device)
 
@@ -202,23 +254,55 @@ if __name__ == "__main__":
                 #Gets the output, that is the cosine similarity between the descriptors and the weights of the classifier
                 output = classifiers[current_group_num](descriptors, targets)
                 #Applies the softmax loss
-                if (args.loss == "new_loss"):
-                    loss = criterion(output)
-                else:
-                    loss = criterion(output, targets)
+                
+                loss = criterion(output, targets)
                 loss.backward()
+                                                   
                 #append the loss to the epoch losses
 
                 
                 da_loss = 0
-                if args.domain_adaptation:
+                enc_loss = 0
+                if args.domain_adaptation and not args.aada:
                     da_output = model(da_images, grl=True)
                     da_loss = criterion(da_output, da_targets)
                     (da_loss * args.grl_loss_weight).backward()
                     da_loss = (da_loss * args.grl_loss_weight).item()
                     del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
-                del loss, output, images, da_loss
+
+                if args.aada:
+                    """
+                    python train.py --dataset_folder small --groups_num 1 --epochs_num 3 --device cpu --target_dataset_folder tokyo-night --pseudo_target_folder small_night --aada True
+                    """
+                
+
+                    features_source, features_target, enc_output_source, enc_output_target = model(da_images, aada=True, targets = da_targets)
+                    enc_loss_source = autoencoder_criterion(enc_output_source, features_source)
+                    enc_loss_target = autoencoder_criterion(enc_output_target, features_target)
+                    
+                    
+
+                    
+
+                    #aada on backbone loss pass
+                    (args.aada_loss_weight * enc_loss_target).backward(retain_graph=True)
+                    model.save_bb_grad()
+                    model.autoencoder.encoder.zero_grad()
+                    model.autoencoder.decoder.zero_grad()
+                    
+                    #aada on autoencoder loss pass
+                    model.backbone.zero_grad()
+                    model.aggregation.zero_grad()
+                  
+                    enc_loss = enc_loss_source + torch.max(torch.zero_(enc_loss_target), args.aada_m - enc_loss_target)
+                    (enc_loss).backward()
+                    enc_loss = enc_loss.item()
+                    model.load_bb_grad()
+                    
+
+                # epoch_losses = np.append(epoch_losses, loss.item() + da_loss)
+                epoch_losses = np.append(epoch_losses, loss.item() + da_loss + enc_loss)
+                del loss, output, images, da_loss, enc_loss
                 #optimize the parameters
                 model_optimizer.step()
                 #optimize the parameters of the classifier
@@ -235,11 +319,32 @@ if __name__ == "__main__":
                     with torch.cuda.amp.autocast():
                         da_output = model(da_images, grl=True)
                         da_loss = criterion(da_output, da_targets)
-                        
                     scaler.scale((da_loss * args.grl_loss_weight)).backward()
                     del da_output, da_images
-                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) ) 
-                del loss, output, images, da_loss
+
+                if args.aada:
+                    enc_loss = 0
+                    with torch.cuda.amp.autocast():
+                        images_source = da_images[da_targets==0, :, :, :]
+                        images_target = da_images[da_targets==1, :, :, :]
+                        enc_output_source, enc_output_target = model(da_images, aada=True, images_source=images_source, images_target=images_target)
+                        
+                        
+                        #CE loss pass
+                        da_loss = criterion(da_output, da_targets)
+                        scaler.scale(da_loss).backward(retain_graph=True)
+                        
+
+                        #AE loss pass
+                        enc_loss_source = autoencoder_criterion(enc_output_source, images_source)
+                        enc_loss_target = autoencoder_criterion(enc_output_target, images_target)
+                        enc_loss = enc_loss_source + max(0, args.aada_m - enc_loss_target)
+                        scaler.scale(enc_loss).backward(retain_graph=True)
+                        scaler.scale(enc_loss_target).backward(retain_graph=True)
+                        
+                        del da_output, da_images, enc_output_source, enc_output_target, images_source, images_target
+                epoch_losses = np.append(epoch_losses, loss.item() + (da_loss * args.grl_loss_weight) + enc_loss ) 
+                del loss, output, images, da_loss, enc_loss
                 scaler.step(model_optimizer)
                 scaler.step(classifiers_optimizers[current_group_num])
                 scaler.update()
@@ -275,5 +380,15 @@ if __name__ == "__main__":
     logging.info(f"Now testing on the test set: {test_ds}")
     recalls, recalls_str,_ = test.test(args, test_ds, model)
     logging.info(f"{test_ds}: {recalls_str}")
+    
+
+    
+    
+    if args.test_all:  
+        recalls, recalls_str,tokyo_xs_db_descriptors = test.test(args, tokyo_xs_test_ds, model)
+        logging.info(f"{tokyo_xs_test_ds}: {recalls_str}")
+        recalls, recalls_str,_ = test.test(args, tokyo_night_test_ds, model, db_descriptors = tokyo_xs_db_descriptors)
+        logging.info(f"{tokyo_night_test_ds}: {recalls_str}")
 
     logging.info("Experiment finished (without any errors)")
+

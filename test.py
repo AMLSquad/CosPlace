@@ -22,8 +22,9 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
         logging.debug("Extracting database descriptors for evaluation/testing")
         # Used to store the descriptors of the images
         # Both queries and database descriptors are stored in this array
+        all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
+
         if db_descriptors is None:
-            all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")
             database_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num)))
             database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                             batch_size=1, pin_memory=(args.device == "cuda"))
@@ -32,10 +33,9 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
                 descriptors = model(images.to(args.device))
                 descriptors = descriptors.cpu().numpy()
                 all_descriptors[indices.numpy(), :] = descriptors
-                db_descriptors = descriptors
         else:
-            db_descriptors = db_descriptors.cpu().numpy()
-            all_descriptors[indices.numpy(), :] = db_descriptors
+            #to speed up the test on tokyo night and tokyo xs since the db descriptors are the same
+            all_descriptors[:eval_ds.database_num] = db_descriptors
         
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
@@ -56,7 +56,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
     faiss_index = faiss.IndexFlatL2(args.fc_output_dim)
     faiss_index.add(database_descriptors)
 
-    del database_descriptors, all_descriptors
+    del all_descriptors
     
     logging.debug("Calculating recalls")
     _, predictions = faiss_index.search(queries_descriptors, max(RECALL_VALUES))
@@ -83,4 +83,4 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module, db_descripto
     # Divide by queries_num and multiply by 100, so the recalls are in percentages
     recalls = recalls / eval_ds.queries_num * 100
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
-    return recalls, recalls_str, db_descriptors
+    return recalls, recalls_str, database_descriptors
