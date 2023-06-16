@@ -1,5 +1,5 @@
 
-from data_augmentation.utils import  apply_fda
+from data_augmentation.fda import  apply_fda
 import sys
 import os
 import random

@@ -141,7 +141,7 @@ Or you can download all models at once at [this link](https://drive.google.com/d
 ## Contribution
 Our contribution consisted in trying to make the model robust to domain shift regarding night images, while having a training dataset built only on day images.
 The code to generate night images using the PP technique is available in `data_agumentation/post_processing_night_image.py`.\
-The code to generate night images using the FDA technique is available in `data_agumentation/utils.py`.\
+The code to generate night images using the FDA technique is available in `data_agumentation/fda.py`.\
 To generate FDA+PP images:
 
 `$ python3 generate_pseudo_target.py source_directory target_directory output_directory`

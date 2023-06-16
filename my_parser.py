@@ -73,7 +73,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--greedy_soup", type=bool, default=False)
     parser.add_argument("--test_tokyo_night", type=bool, default=False)
     
-    parser.add_argument("--focal_loss", type=bool, default=False)
+ 
     parser.add_argument("--l_loss" , type=float, default=1)
     parser.add_argument("--backbone_path", type=str, default=None)
 
@@ -113,7 +113,7 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.test_set_folder):
         raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
 
-    if args.loss not in ["cosface", "arcface", "sphereface", "new_loss"]:
+    if args.loss not in ["cosface", "arcface", "sphereface"]:
         raise Exception("No valid loss for --loss arg, please try again typing 'cosface', 'sphereface' or 'arcface'")
 
 
