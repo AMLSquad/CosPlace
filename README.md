@@ -1,4 +1,5 @@
-
+# This is our contribution to the Cosplace model
+Commands related to our contribution are described later on the page
 # Rethinking Visual Geo-localization for Large-Scale Applications
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rethinking-visual-geo-localization-for-large/visual-place-recognition-on-pittsburgh-250k)](https://paperswithcode.com/sota/visual-place-recognition-on-pittsburgh-250k?p=rethinking-visual-geo-localization-for-large)[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rethinking-visual-geo-localization-for-large/visual-place-recognition-on-pittsburgh-30k)](https://paperswithcode.com/sota/visual-place-recognition-on-pittsburgh-30k?p=rethinking-visual-geo-localization-for-large)
@@ -137,6 +138,36 @@ If you want to use these weights in your own code, make sure that the model is t
 
 Or you can download all models at once at [this link](https://drive.google.com/drive/folders/1WzSLnv05FLm-XqP5DxR5nXaaixH23uvV?usp=sharing)
 
+## Contribution
+Our contribution consisted in trying to make the model robust to domain shift regarding night images, while having a training dataset built only on day images.
+The code to generate night images using the PP technique is available in `data_agumentation/post_processing_night_image.py`.\
+The code to generate night images using the FDA technique is available in `data_agumentation/utils.py`.\
+To generate FDA+PP images:
+
+`$ python3 generate_pseudo_target.py source_directory target_directory output_directory`
+
+To be able to train with our extensions we introduced some command line parameters to add to the train.py input, these are:
+
+`--pseudo_target_folder` To specify the folder contained the pseudo_target_dataset\
+`--loss` To specify the loss to be used, it can be "cosface", "arcface", "sphereface"\
+`--domain_adaptation` To use GRL to perform domain adaptation\
+`--grl_loss_weight` To define the weight for the GRL loss on the backbone\
+`--backbone_path` To specify the path of the pre-trained backbone you want to load\
+`--aada` To use the AE to perform domain adaptation\
+`--aada_m` To define the m of aada\
+`--aada_loss_weight` To define the weight for the AE loss on the backbone\
+
+To use the Uniform Model Soups Ensemble methodology:
+
+`$ python3 uniform_soup.py --soup_folder soup_folder --uniform_soup True`
+
+To use the Greedy Model Soups Ensemble methodology:
+
+`$ python3 uniform_soup.py --soup_folder soup_folder --greedy_soup True`
+
+Where soup_folder is the directory in which there are the ignredients.
+
+
 ## Issues
 If you questions regarding our code or dataset, feel free to open an issue or send an email to berton.gabri@gmail.com
 
@@ -157,189 +188,3 @@ Here is the bibtex to cite our paper
   year = {2022}, }
 ```
 
-## Results
-
-<table>
-  <tr>
-    <th>Model</th>
-    <th>sf-xs</th>
-    <th>tokyo-xs</th>
-    <th>tokyo-night</th>
-  </tr>
-  <tr>
-    <td>Cosface</td>
-    <td>52.7 / 65.5 / 70.8</td>
-    <td>70.2 / 84.1 / 89.5</td>
-    <td>52.4 / 70.5 / 80.0</td>
-  </tr>
-  <tr>
-    <td>Arcface (s = 64, m = 0.5)</td>
-    <td>48.4/ 61.1/ 66.0</td>
-    <td>70.2/ 84.4/ 87.9</td>
-    <td>51.4 / 74.3 / 80.0</td> 
-  </tr>
-  
-  <tr>
-    <td>Sphereface (s = 30, m = 1.5)</td>
-    <td>50.4 / 63.7 / 68.6</td>
-    <td>71.7 / 84.4 / 87.9</td>
-    <td>56.2 / 70.5 / 77.1</td> 
-  </tr>
-  <tr>
-    <td>FDA+PP+DA (alpha = 0.1)</td>
-    <td>50.9 / 63.4 / 69.1</td>
-    <td>73.3 / 85.4 / 88.6</td>
-    <td>61.0 / 81.0 / 83.8</td> 
-  </tr>
-  <tr>
-    <td>FDA+PP+AE</td>
-    <td>51.0 / 64.3 / 69.9</td>
-    <td>69.2 / 83.8 / 88.6</td>
-    <td>58.1 / 75.2 / 83.8,</td> 
-  </tr>
-  
-  <tr>
-    <td>DA</td>
-    <td>52.7 / 68.0 / 73.0</td>
-    <td>71.7 / 86.7 / 91.1</td>
-    <td>56.2 / 78.1 / 84.8</td> 
-  </tr>
-  <tr>
-    <td>AE conv (m = 0.5 gamma = 0.01)</td>
-    <td>52.8 / 66.0 / 71.0</td>
-    <td>73.0 / 86.3 / 91.1</td>
-    <td>53.3 / 76.2 / 83.8</td> 
-  </tr>  
-  <tr>
-    <td>AE conv (m = 2 gamma = 0.01)</td>
-    <td>52.8 / 66.0 / 71.0</td>
-    <td>73.0 / 86.3 / 91.1</td>
-    <td>53.3 / 76.2 / 83.8</td> 
-  </tr>
-  <tr>
-    <td>AE conv (m = 5 gamma = 0.01)</td>
-    <td>51.0 / 64.5 / 69.7,</td>
-    <td>70.2 / 84.4 / 88.9,</td>
-    <td>57.1 / 74.3 / 84.8</td> 
-  </tr>  
-  <tr>
-    <td>FDA+PP</td>
-    <td>51.0 / 65.9 / 71.0</td>
-    <td>69.8 / 84.1 / 88.6</td>
-    <td>53.3 / 74.3 / 77.1</td> 
-  </tr>
-  <tr>
-    <td>FDA</td>
-    <td>51.3 / 65.2 / 69.8</td>
-    <td>71.7 / 83.8 / 88.3</td>
-    <td>53.3 / 69.5 / 77.1</td> 
-  </tr>
-  <tr>
-    <td>PP</td>
-    <td>48.6 / 61.9 / 67.2</td>
-    <td>67.6 / 82.2 / 88.3</td>
-    <td>50.5 / 71.4 / 81.9</td> 
-  </tr>
-  <tr>
-    <td>FDA on test</td>
-    <td>52.1 / 66.6 / 70.6</td>
-    <td>70.2 / 84.4 / 88.6</td>
-    <td>56.2 / 71.4 / 81.0</td> 
-  </tr>
-  <tr>
-    <td>FDA+PP+DA (alpha = 0.01)</td>
-    <td>50.4 / 63.9 / 69.0</td>
-    <td>71.4 / 86.0 / 89.8</td>
-    <td>59.0 / 79.0 / 83.8</td> 
-  </tr>
-  <tr>
-    <td>FDA+PP+DA (alpha = 1)</td>
-    <td>47.2 / 62.5 / 67.7</td>
-    <td>58.1 / 71.4 / 78.1</td>
-    <td>68.3 / 82.9 / 87.3</td> 
-  </tr>
-   <tr>
-    <td>FDA+PP+DA (beta = 0.09)</td>
-    <td>46.5 / 61.8 / 68.3 </td>
-    <td> 71.4 / 84.8 / 89.5 </td>
-    <td> 64.8 / 74.3  / 81.0  </td> 
-  </tr>
-  <tr>
-    <td>Soup Face</td>
-    <td>51.6 / 65.1 / 70.1 </td>
-    <td>68.9 / 82.5 / 87.9 </td>
-    <td>52.4 / 71.4  / 77.1  </td> 
-  </tr>
-  <tr>
-    <td>EMMS l=1</td>
-    <td>52.9 / 66.5 / 71.1 </td>
-    <td>69.2 / 81.6 / 86.3 </td>
-    <td>52.4 / 70.5  / 77.1  </td> 
-  </tr>
-  <tr>
-    <td>EMMS l=1.5</td>
-    <td>51.7 / 66.0 / 71.1 </td>
-    <td>69.8 / 83.5 / 87.6 </td>
-    <td>54.3 / 72.4  / 77.1  </td> 
-  </tr>
-  <tr>
-    <td>EMMS l=2</td>
-    <td>50.5 / 65.4 / 70.4 </td>
-    <td>70.5 / 83.5 / 87.6 </td>
-    <td>52.4 / 72.4  / 77.1  </td> 
-  </tr>
-  <tr>
-    <td>FDA+PP+colorjitter+EMMS</td>
-    <td>50.3 / 65.2 / 70.9 </td>
-    <td>70.5 / 86.3 / 90.5 </td>
-    <td>54.3 / 79.0  / 84.8  </td> 
-  </tr>
-  <tr>
-    <td>Places 365 pretrain</td>
-    <td> 50.3 / 65.5 / 70.3</td>
-    <td> 64.4 / 81.6 / 87.6 </td>
-    <td> 42.9 / 68.6 / 77.1 </td> 
-  </tr>
-  <tr>
-    <td>Different Alphas</td>
-    <td> 49.8 / 64.7 / 69.8</td>
-    <td> 72.1 / 84.1 / 89.2 </td>
-    <td> 57.1 / 78.1 /83.8 </td> 
-  </tr>
-  <tr>
-    <td>Face soup + EMMS</td>
-    <td> 51.6 / 66.8 / 70.7</td>
-    <td> 67.6 / 84.1 / 89.5</td>
-    <td> 50.5 / 73.3 / 81.0 </td> 
-  </tr>
-  <tr>
-    <td> FDA PP DA soup</td>
-    <td>  51.4 / 65.3 / 70.3 </td>
-    <td>  70.8 / 84.1 / 88.9 </td>
-    <td>  55.2 / 75.2 / 81.9 </td> 
-  </tr>
-  <tr>
-    <td> AE fully (m = 0.5, gamma = 0.01) </td>
-    <td> </td>
-    <td> </td>
-    <td> </td>
- </tr>
-  <tr>
-    <td> AE fully (m = 0.5, gamma = 0.01) </td>
-    <td> 53.6 / 66.5 / 73.0 </td>
-    <td> 74.0 / 86.7 / 91.1 </td>
-    <td> 57.1 / 77.1 / 85.7 </td>
- </tr>
-  <tr>
-    <td> AE fully (m = 5, gamma = 0.01) </td>
-    <td> 53.6 / 66.5 / 73.0 </td>
-    <td> 74.0 / 86.7 / 91.1 </td>
-    <td> 57.1 / 77.1 / 85.7 </td>
- </tr>
- <tr>
-   <td> FDA PP AE fully (m= 0.5, gamma = 0.01)</td>
-   <td>49.7 / 64.1 / 68.6</td>
-   <td> 70.5 / 85.1 / 90.5 </td>
-   <td> 58.1 / 75.2 / 83.8 </td>
- </tr>
-</table>
