@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-    autoencoder_layer = ["autoencoder.encoder.0.weight", "autoencoder.encoder.0.bias", "autoencoder.encoder.2.weight", "autoencoder.encoder.2.bias", "autoencoder.encoder.4.weight", "autoencoder.encoder.4.bias", "autoencoder.decoder.0.weight", "autoencoder.decoder.0.bias", "autoencoder.decoder.2.weight", "autoencoder.decoder.2.bias", "autoencoder.decoder.4.weight", "autoencoder.decoder.4.bias"]
+    autoencoder_layer = ["autoencoder.encoder.0.weight", "autoencoder.encoder.0.bias", "autoencoder.encoder.2.weight", "autoencoder.encoder.2.bias", "autoencoder.decoder.0.weight", "autoencoder.decoder.0.bias", "autoencoder.decoder.2.weight", "autoencoder.decoder.2.bias"]
 
     args = parser.parse_arguments(is_training=False)
     start_time = datetime.now()
