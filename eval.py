@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-    autoencoder_layer = ["autoencoder.encoder.0.weight", "autoencoder.encoder.0.bias", "autoencoder.encoder.2.weight", "autoencoder.encoder.2.bias", "autoencoder.decoder.0.weight", "autoencoder.decoder.0.bias", "autoencoder.decoder.2.weight", "autoencoder.decoder.2.bias"]
+    
 
     args = parser.parse_arguments(is_training=False)
     start_time = datetime.now()
@@ -32,16 +32,12 @@ if __name__ == "__main__":
     if args.resume_model is not None:
         logging.info(f"Loading model from {args.resume_model}")
         model_state_dict = torch.load(args.resume_model)
+
         if args.domain_adaptation:
-            del model_state_dict["discriminator.1.weight"]
-            del model_state_dict["discriminator.1.bias"]
-            del model_state_dict["discriminator.3.weight"]
-            del model_state_dict["discriminator.3.bias"]
-            del model_state_dict["discriminator.5.weight"]
-            del model_state_dict["discriminator.5.bias"]
+                    model_state_dict = {k: v for k, v in model_state_dict.items() if not k.startswith("discriminator")}
+
         if args.aada:
-            for l in autoencoder_layer:
-                del model_state_dict[l]
+            model_state_dict = {k: v for k, v in model_state_dict.items() if not k.startswith("autoencoder")}
 
 
 
