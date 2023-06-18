@@ -45,8 +45,8 @@ class MarginCosineProduct(nn.Module):
         output = self.s * (cosine - one_hot * self.m)
         output = F.cross_entropy(output, label, reduction='none')
         #output sul quale verrà applicata la cross entropy loss.
-        SM = self.l * torch.mm(inputs, self.weight.t())
-        SM = F.cross_entropy(SM, label, reduction='none')
+        SM = torch.mm(inputs, self.weight.t())
+        SM = self.l * F.cross_entropy(SM, label, reduction='none')
         output = output + SM
         return output
     
@@ -58,22 +58,10 @@ class MarginCosineProduct(nn.Module):
                + ', m=' + str(self.m) + ')'
 
 
-class NewLoss(_WeightedLoss):
-    __constants__ = ['ignore_index', 'reduction', 'label_smoothing']
-    ignore_index: int
-    label_smoothing: float
+class NewLoss():
 
-    def __init__(self, weight: Optional[Tensor] = None, size_average=None, ignore_index: int = -100,
-                 reduce=None, reduction: str = 'mean', label_smoothing: float = 0.0) -> None:
-        super().__init__(weight, size_average, reduce, reduction)
-        self.ignore_index = ignore_index
-        self.label_smoothing = label_smoothing
+    def __init__(self):
+        super().__init__()
 
-    def forward(self, ASM: Tensor, SM: Tensor, target: Tensor) -> Tensor:
-        first_term =  F.cross_entropy(ASM, target, weight=self.weight,
-                               ignore_index=self.ignore_index, reduction=self.reduction,
-                               label_smoothing=self.label_smoothing)
-        second_term = F.cross_entropy(SM, target, weight=self.weight,
-                                      ignore_index=self.ignore_index, reduction=self.reduction,
-                                    label_smoothing=self.label_smoothing)
-        return first_term + second_term
+    def __call__(self, output: Tensor) -> Tensor:
+        return torch.mean(output)

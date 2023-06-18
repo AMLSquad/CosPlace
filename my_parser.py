@@ -14,7 +14,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--min_images_per_class", type=int, default=10, help="_")
     # Model parameters
     parser.add_argument("--backbone", type=str, default="resnet18",
-                        choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152"], help="_")
+                        choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152", "resnet18_places", "resnet18_gldv2"], help="_")
     parser.add_argument("--fc_output_dim", type=int, default=512,
                         help="Output dimension of final fully connected layer")
     # Training parameters
@@ -48,7 +48,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--device", type=str, default="cuda",
                         choices=["cuda", "cpu"], help="_")
     parser.add_argument("--seed", type=int, default=0, help="_")
-    parser.add_argument("--num_workers", type=int, default=8, help="_")
+    parser.add_argument("--num_workers", type=int, default=1, help="_")
     # Paths parameters
     parser.add_argument("--dataset_folder", type=str, default="small/",
                         help="path of the folder with train/val/test sets")
@@ -58,7 +58,7 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with images from the target for DA sets")
     parser.add_argument("--domain_adaptation", type=bool, default=False)
     parser.add_argument("--grl_loss_weight", type=float, default=0.1, help="Weight for GRL loss")
-    parser.add_argument("--pseudo_target_folder", type=str, default="")
+    parser.add_argument("--pseudo_target_folder", type=str, default=None)
     parser.add_argument("--test_queries_folder", type=str, default="queries_v1")
     parser.add_argument("--experiment_name",type=str,default="")
     parser.add_argument("--loss",type=str, default="cosface")
@@ -67,8 +67,24 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--reduce_brightness", type=float, default=0.65)
     parser.add_argument("--increase_contrast", type=float, default=1.15)
     parser.add_argument("--decrease_saturation", type=float, default=0.85)
+    parser.add_argument("--soup_folder", type=str, default="soup_folder/")
     parser.add_argument("--base_preprocessing", type=bool, default=False)
-    parser.add_argument("--focal_loss", type=bool, default=False)
+    parser.add_argument("--uniform_soup", type=bool, default=False)
+    parser.add_argument("--greedy_soup", type=bool, default=False)
+    parser.add_argument("--test_tokyo_night", type=bool, default=False)
+    
+ 
+    parser.add_argument("--l_loss" , type=float, default=1)
+    parser.add_argument("--backbone_path", type=str, default=None)
+
+    parser.add_argument("--aada", type=bool, default=False)
+    parser.add_argument("--aada_m", type=float, default=0.5)
+    parser.add_argument("--aada_loss_weight", type=float, default=0.01)
+
+    parser.add_argument("--tokyo_xs_dataset_folder", type=str, default="tokyo_xs/test")
+
+    parser.add_argument("--test_all", type=bool, default=False)
+    parser.add_argument("--pseudo_da", type=bool, default=False)
     args = parser.parse_args()
     
     
@@ -97,7 +113,7 @@ def parse_arguments(is_training: bool = True):
     if not os.path.exists(args.test_set_folder):
         raise FileNotFoundError(f"Folder {args.test_set_folder} does not exist")
 
-    if args.loss not in ["cosface", "arcface", "sphereface", "new_loss"]:
+    if args.loss not in ["cosface", "arcface", "sphereface"]:
         raise Exception("No valid loss for --loss arg, please try again typing 'cosface', 'sphereface' or 'arcface'")
 
 

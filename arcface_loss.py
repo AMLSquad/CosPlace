@@ -2,6 +2,9 @@ import math
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 
 def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e-8) -> torch.Tensor:
@@ -11,48 +14,34 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
     return ip / torch.ger(w1, w2).clamp(min=eps)
 
 
-class MarginCosineProduct(nn.Module):
-    """Implement of large margin cosine distance:
-    Args:
-        in_features: size of each input sample
-        out_features: size of each output sample
-        s: norm of input feature
-        m: margin
+
+
+class ArcFace(nn.Module):
+    """ reference: <Additive Angular Margin Loss for Deep Face Recognition>
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40):
-        super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
+    def __init__(self, feat_dim, num_class, s=64., m=0.5):
+        super(ArcFace, self).__init__()
+        self.feat_dim = feat_dim
+        self.num_class = num_class
         self.s = s
         self.m = m
-        self.cos_m = math.cos(m)
-        self.sin_m = math.sin(m)
-        self.th = math.cos(math.pi - m)
-        self.mm = math.sin(math.pi - m) * m
-        self.weight = Parameter(torch.Tensor(out_features, in_features))
-        nn.init.xavier_uniform_(self.weight)
-    
-    def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-        #Cosine similarity between x and weights.
-        cosine = cosine_sim(inputs, self.weight)
-        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(0, 1))
-        phi = cosine * self.cos_m - sine * self.sin_m
-        #safe margin
-        phi = torch.where(cosine > self.th, phi, cosine - self.mm)
+        self.w = nn.Parameter(torch.Tensor(feat_dim, num_class))
+        nn.init.xavier_normal_(self.w)
 
-        one_hot = torch.zeros_like(cosine)
-        #label.view => vettore colonna. 
-        one_hot.scatter_(1, label.view(-1, 1), 1.0)
-        my_cosine_vector = one_hot * phi + (1.0-one_hot) * cosine
+    def forward(self, x, y):
+        with torch.no_grad():
+            self.w.data = F.normalize(self.w.data, dim=0)
 
-        output = self.s * (my_cosine_vector)
+        cos_theta = F.normalize(x, dim=1).mm(self.w)
+        with torch.no_grad():
+            theta_m = torch.acos(cos_theta.clamp(-1+1e-5, 1-1e-5))
+            theta_m.scatter_(1, y.view(-1, 1), self.m, reduce='add')
+            theta_m.clamp_(1e-5, 3.14159)
+            d_theta = torch.cos(theta_m) - cos_theta
 
-        #output sul quale verrà applicata la cross entropy loss.
-        return output
-    
-    def __repr__(self):
-        return self.__class__.__name__ + '(' \
-               + 'in_features=' + str(self.in_features) \
-               + ', out_features=' + str(self.out_features) \
-               + ', s=' + str(self.s) \
-               + ', m=' + str(self.m) + ')'
+        logits = self.s * (cos_theta + d_theta)
+        
+
+        return logits
+
+
