@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
                 f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
 
-
+    apply_aug = False
     if args.augmentation_device == "cuda":
         apply_aug = True
         if args.augmentation_type == "brightness":
@@ -242,6 +242,10 @@ if __name__ == "__main__":
 
             if args.augmentation_device == "cuda":
                 images = gpu_augmentation(images)
+                if args.domain_adaptation or args.aada:
+                    da_images = target_augmentation(da_images)
+
+                   
             
             model_optimizer.zero_grad()
             classifiers_optimizers[current_group_num].zero_grad()
